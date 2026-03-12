@@ -229,4 +229,33 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       textAlign: 'center',
     },
   },
+  pricing: {
+    type: 'pricing',
+    label: 'Pricing',
+    icon: CreditCard,
+    isContainer: true,
+    defaultProps: {},
+    defaultStyles: {
+      padding: '4rem 2rem',
+      backgroundColor: '#ffffff',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '2rem',
+    },
+  },
+  features: {
+    type: 'features',
+    label: 'Features',
+    icon: ListTodo,
+    isContainer: true,
+    defaultProps: {},
+    defaultStyles: {
+      padding: '4rem 2rem',
+      backgroundColor: '#f9fafb',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '2rem',
+    },
+  },
 };

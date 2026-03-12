@@ -66,16 +66,16 @@ export default function Editor() {
         children: definition.isContainer ? [] : undefined,
       };
 
-      // Simple logic: if dropped on canvas or inside a container
       const overId = over.id as string;
       const overData = over.data.current;
 
-      if (overId === 'canvas-root') {
+      if (overData?.isDropIndicator) {
+        addElement(newElement, overData.parentId, overData.index);
+      } else if (overId === 'canvas-root') {
         addElement(newElement);
       } else if (overData?.isContainer) {
         addElement(newElement, overId);
       } else {
-        // Find parent if dropped on a non-container element
         addElement(newElement);
       }
       

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 export type ComponentType = 
   | 'section' | 'container' | 'grid' | 'flex'
   | 'heading' | 'paragraph' | 'button' | 'image' | 'icon' | 'divider' | 'spacer'
-  | 'navbar' | 'hero' | 'card' | 'footer';
+  | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features';
 
 export interface Styles {
   fontSize?: string;
@@ -39,6 +39,8 @@ export interface Styles {
 export interface ElementInstance {
   id: string;
   type: ComponentType;
+  name?: string;
+  locked?: boolean;
   props: {
     text?: string;
     src?: string;
@@ -67,6 +69,8 @@ interface BuilderState {
   selectedElementId: string | null;
   deviceMode: DeviceMode;
   isPreview: boolean;
+  leftPanelTab: 'components' | 'layers';
+  rightPanelTab: 'style' | 'content' | 'layout';
   history: Page[][];
   historyIndex: number;
   
@@ -77,6 +81,8 @@ interface BuilderState {
   updateElement: (id: string, updates: Partial<ElementInstance>) => void;
   selectElement: (id: string | null) => void;
   setDeviceMode: (mode: DeviceMode) => void;
+  setLeftPanelTab: (tab: 'components' | 'layers') => void;
+  setRightPanelTab: (tab: 'style' | 'content' | 'layout') => void;
   
   // Page Actions
   addPage: (name: string) => void;
@@ -84,6 +90,7 @@ interface BuilderState {
   setActivePage: (id: string) => void;
   renamePage: (id: string, name: string) => void;
   setPreview: (isPreview: boolean) => void;
+  duplicateElement: (id: string) => void;
 
   // History
   undo: () => void;
@@ -105,6 +112,8 @@ export const useBuilderStore = create<BuilderState>()(
       selectedElementId: null,
       deviceMode: 'desktop',
       isPreview: false,
+      leftPanelTab: 'components',
+      rightPanelTab: 'style',
       history: [initialPages],
       historyIndex: 0,
 
@@ -187,6 +196,10 @@ export const useBuilderStore = create<BuilderState>()(
       
       setDeviceMode: (mode) => set({ deviceMode: mode }),
 
+      setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
+      
+      setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
+
       addPage: (name) => {
         const { pages } = get();
         const newPage: Page = { id: uuidv4(), name, elements: [] };
@@ -221,6 +234,42 @@ export const useBuilderStore = create<BuilderState>()(
       },
 
       setPreview: (isPreview) => set({ isPreview, selectedElementId: null }),
+      
+      duplicateElement: (id) => {
+        const { elements, pages, activePageId } = get();
+        
+        const findAndDuplicate = (items: ElementInstance[]): { newItems: ElementInstance[], duplicated?: ElementInstance } => {
+          let duplicated: ElementInstance | undefined;
+          const newItems = items.flatMap(item => {
+            if (item.id === id) {
+              const clone = JSON.parse(JSON.stringify(item));
+              const regenerateIds = (el: ElementInstance) => {
+                el.id = uuidv4();
+                if (el.children) el.children.forEach(regenerateIds);
+              };
+              regenerateIds(clone);
+              duplicated = clone;
+              return [item, clone];
+            }
+            if (item.children) {
+              const result = findAndDuplicate(item.children);
+              if (result.duplicated) {
+                duplicated = result.duplicated;
+                return [{ ...item, children: result.newItems }];
+              }
+            }
+            return [item];
+          });
+          return { newItems, duplicated };
+        };
+
+        const { newItems, duplicated } = findAndDuplicate(elements);
+        if (duplicated) {
+          const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: newItems } : p);
+          set({ elements: newItems, pages: newPages, selectedElementId: duplicated.id });
+          get().saveToHistory();
+        }
+      },
 
       saveToHistory: () => {
         const { pages, history, historyIndex } = get();
