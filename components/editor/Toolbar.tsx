@@ -25,7 +25,8 @@ export default function Toolbar() {
     historyIndex,
     history,
     isPreview,
-    setPreview
+    setPreview,
+    presence
   } = useBuilderStore();
 
   const canUndo = historyIndex > 0;
@@ -68,6 +69,23 @@ export default function Toolbar() {
         )}
       </div>
 
+      <div className="flex items-center gap-4">
+        <div className="flex -space-x-2">
+          {presence.map((user) => (
+            <div 
+              key={user.id}
+              className="w-7 h-7 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-white relative group"
+              style={{ backgroundColor: user.color }}
+            >
+              {user.name.charAt(0)}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 text-white text-[9px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-zinc-700">
+                {user.name}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center bg-zinc-800/50 rounded-lg p-1 border border-zinc-800">
         <DeviceButton 
           active={deviceMode === 'desktop'} 
@@ -90,6 +108,16 @@ export default function Toolbar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <button 
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Share link copied to clipboard!');
+          }}
+          className="p-2 text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
+          title="Share project"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
         <button 
           onClick={() => setPreview(!isPreview)}
           className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${isPreview ? 'bg-blue-600 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}

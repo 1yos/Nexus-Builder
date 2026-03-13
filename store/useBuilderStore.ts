@@ -36,11 +36,23 @@ export interface Styles {
   [key: string]: any;
 }
 
+export interface Animation {
+  id: string;
+  type: 'fade' | 'slide' | 'scale' | 'rotate' | 'bounce';
+  duration: number;
+  delay: number;
+  ease: string;
+}
+
 export interface ElementInstance {
   id: string;
   type: ComponentType;
   name?: string;
   locked?: boolean;
+  variant?: string;
+  animations?: Animation[];
+  isGlobal?: boolean;
+  globalId?: string;
   props: {
     text?: string;
     src?: string;
@@ -50,6 +62,10 @@ export interface ElementInstance {
     [key: string]: any;
   };
   styles: Styles;
+  responsiveStyles?: {
+    tablet?: Styles;
+    mobile?: Styles;
+  };
   children?: ElementInstance[];
   parentId?: string;
 }
@@ -61,18 +77,35 @@ export interface Page {
 }
 
 export type DeviceMode = 'desktop' | 'tablet' | 'mobile';
+export type EditorMode = 'design' | 'code';
+
+export interface PresenceUser {
+  id: string;
+  name: string;
+  color: string;
+  x: number;
+  y: number;
+  lastActive: number;
+}
 
 interface BuilderState {
   pages: Page[];
   activePageId: string;
   elements: ElementInstance[]; // Convenience reference to active page elements
   selectedElementId: string | null;
+  hoveredElementId: string | null;
   deviceMode: DeviceMode;
+  editorMode: EditorMode;
   isPreview: boolean;
-  leftPanelTab: 'components' | 'layers';
-  rightPanelTab: 'style' | 'content' | 'layout';
+  leftPanelTab: 'components' | 'layers' | 'ai' | 'code';
+  rightPanelTab: 'style' | 'content' | 'layout' | 'animations';
   history: Page[][];
   historyIndex: number;
+  globalComponents: Record<string, ElementInstance>;
+  presence: PresenceUser[];
+  isAiGenerating: boolean;
+  zoom: number;
+  pan: { x: number; y: number };
   
   // Actions
   setElements: (elements: ElementInstance[]) => void;
@@ -80,9 +113,16 @@ interface BuilderState {
   removeElement: (id: string) => void;
   updateElement: (id: string, updates: Partial<ElementInstance>) => void;
   selectElement: (id: string | null) => void;
+  setHoveredElementId: (id: string | null) => void;
+  reorderElement: (id: string, targetId: string, position: 'before' | 'after' | 'inside') => void;
+  moveElement: (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => void;
+  moveElementTo: (id: string, parentId: string | null, index: number) => void;
   setDeviceMode: (mode: DeviceMode) => void;
-  setLeftPanelTab: (tab: 'components' | 'layers') => void;
-  setRightPanelTab: (tab: 'style' | 'content' | 'layout') => void;
+  setEditorMode: (mode: EditorMode) => void;
+  setLeftPanelTab: (tab: 'components' | 'layers' | 'ai' | 'code') => void;
+  setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations') => void;
+  setZoom: (zoom: number) => void;
+  setPan: (pan: { x: number; y: number }) => void;
   
   // Page Actions
   addPage: (name: string) => void;
@@ -91,6 +131,15 @@ interface BuilderState {
   renamePage: (id: string, name: string) => void;
   setPreview: (isPreview: boolean) => void;
   duplicateElement: (id: string) => void;
+
+  // Global Components
+  convertToGlobal: (id: string) => void;
+  
+  // AI
+  setAiGenerating: (isGenerating: boolean) => void;
+
+  // Presence
+  updatePresence: (user: Partial<PresenceUser>) => void;
 
   // History
   undo: () => void;
@@ -110,12 +159,19 @@ export const useBuilderStore = create<BuilderState>()(
       activePageId: initialPageId,
       elements: [],
       selectedElementId: null,
+      hoveredElementId: null,
       deviceMode: 'desktop',
+      editorMode: 'design',
       isPreview: false,
       leftPanelTab: 'components',
       rightPanelTab: 'style',
       history: [initialPages],
       historyIndex: 0,
+      globalComponents: {},
+      presence: [],
+      isAiGenerating: false,
+      zoom: 1,
+      pan: { x: 0, y: 0 },
 
       setElements: (elements) => {
         const { pages, activePageId } = get();
@@ -194,11 +250,231 @@ export const useBuilderStore = create<BuilderState>()(
 
       selectElement: (id) => set({ selectedElementId: id }),
       
+      setHoveredElementId: (id) => set({ hoveredElementId: id }),
+
+      reorderElement: (id, targetId, position) => {
+        const { elements, pages, activePageId } = get();
+        
+        // Deep clone elements to avoid mutation
+        const newElements = JSON.parse(JSON.stringify(elements)) as ElementInstance[];
+        
+        let elementToMove: ElementInstance | undefined;
+        
+        // 1. Remove element from its current position
+        const removeElementById = (items: ElementInstance[]): ElementInstance[] => {
+          return items.filter(item => {
+            if (item.id === id) {
+              elementToMove = item;
+              return false;
+            }
+            if (item.children) {
+              item.children = removeElementById(item.children);
+            }
+            return true;
+          });
+        };
+        
+        const filteredElements = removeElementById(newElements);
+        
+        if (!elementToMove) return;
+
+        // 2. Insert element at new position
+        const insertElement = (items: ElementInstance[]): ElementInstance[] => {
+          const result: ElementInstance[] = [];
+          for (const item of items) {
+            if (item.id === targetId) {
+              if (position === 'before') {
+                result.push(elementToMove!);
+                result.push(item);
+              } else if (position === 'after') {
+                result.push(item);
+                result.push(elementToMove!);
+              } else if (position === 'inside') {
+                if (!item.children) item.children = [];
+                item.children.push(elementToMove!);
+                result.push(item);
+              }
+            } else {
+              if (item.children) {
+                item.children = insertElement(item.children);
+              }
+              result.push(item);
+            }
+          }
+          return result;
+        };
+
+        const finalElements = insertElement(filteredElements);
+        
+        // If targetId was null or not found in the loop above (e.g. moving to root)
+        // This is a simplified version, real reordering might need more edge case handling
+        
+        const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: finalElements } : p);
+        set({ elements: finalElements, pages: newPages });
+        get().saveToHistory();
+      },
+
+      moveElement: (id, direction) => {
+        const { elements, pages, activePageId } = get();
+        const newElements = JSON.parse(JSON.stringify(elements)) as ElementInstance[];
+        
+        const findAndMove = (items: ElementInstance[]): boolean => {
+          const index = items.findIndex(item => item.id === id);
+          if (index !== -1) {
+            if (direction === 'up' && index > 0) {
+              const temp = items[index];
+              items[index] = items[index - 1];
+              items[index - 1] = temp;
+              return true;
+            }
+            if (direction === 'down' && index < items.length - 1) {
+              const temp = items[index];
+              items[index] = items[index + 1];
+              items[index + 1] = temp;
+              return true;
+            }
+            if (direction === 'top' && index > 0) {
+              const [item] = items.splice(index, 1);
+              items.unshift(item);
+              return true;
+            }
+            if (direction === 'bottom' && index < items.length - 1) {
+              const [item] = items.splice(index, 1);
+              items.push(item);
+              return true;
+            }
+            return false;
+          }
+          
+          for (const item of items) {
+            if (item.children && findAndMove(item.children)) return true;
+          }
+          return false;
+        };
+        
+        if (findAndMove(newElements)) {
+          const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: newElements } : p);
+          set({ elements: newElements, pages: newPages });
+          get().saveToHistory();
+        }
+      },
+
+      moveElementTo: (id, parentId, index) => {
+        const { elements, pages, activePageId } = get();
+        const newElements = JSON.parse(JSON.stringify(elements)) as ElementInstance[];
+        
+        let elementToMove: ElementInstance | undefined;
+        
+        // 1. Remove element from its current position
+        const removeElementById = (items: ElementInstance[]): ElementInstance[] => {
+          return items.filter(item => {
+            if (item.id === id) {
+              elementToMove = item;
+              return false;
+            }
+            if (item.children) {
+              item.children = removeElementById(item.children);
+            }
+            return true;
+          });
+        };
+        
+        const filteredElements = removeElementById(newElements);
+        if (!elementToMove) return;
+
+        // 2. Insert at new position
+        if (!parentId) {
+          filteredElements.splice(index, 0, elementToMove);
+        } else {
+          const findAndInsert = (items: ElementInstance[]): boolean => {
+            for (const item of items) {
+              if (item.id === parentId) {
+                if (!item.children) item.children = [];
+                item.children.splice(index, 0, elementToMove!);
+                return true;
+              }
+              if (item.children && findAndInsert(item.children)) return true;
+            }
+            return false;
+          };
+          findAndInsert(filteredElements);
+        }
+
+        const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: filteredElements } : p);
+        set({ elements: filteredElements, pages: newPages });
+        get().saveToHistory();
+      },
+
       setDeviceMode: (mode) => set({ deviceMode: mode }),
+
+      setEditorMode: (mode) => set({ editorMode: mode }),
 
       setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
       
       setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
+
+      setZoom: (zoom) => set({ zoom }),
+      
+      setPan: (pan) => set({ pan }),
+
+      convertToGlobal: (id) => {
+        const { elements, globalComponents } = get();
+        const findElement = (items: ElementInstance[]): ElementInstance | undefined => {
+          for (const item of items) {
+            if (item.id === id) return item;
+            if (item.children) {
+              const found = findElement(item.children);
+              if (found) return found;
+            }
+          }
+        };
+        const element = findElement(elements);
+        if (element) {
+          const globalId = uuidv4();
+          const newGlobalComponents = { ...globalComponents, [globalId]: JSON.parse(JSON.stringify(element)) };
+          
+          const updateElements = (items: ElementInstance[]): ElementInstance[] => {
+            return items.map(item => {
+              if (item.id === id) {
+                return { ...item, isGlobal: true, globalId };
+              }
+              if (item.children) {
+                return { ...item, children: updateElements(item.children) };
+              }
+              return item;
+            });
+          };
+          
+          const newElements = updateElements(elements);
+          const { pages, activePageId } = get();
+          const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: newElements } : p);
+          set({ globalComponents: newGlobalComponents, elements: newElements, pages: newPages });
+          get().saveToHistory();
+        }
+      },
+
+      setAiGenerating: (isAiGenerating) => set({ isAiGenerating }),
+
+      updatePresence: (userData) => {
+        const { presence } = get();
+        const existing = presence.find(u => u.id === userData.id);
+        if (existing) {
+          set({
+            presence: presence.map(u => u.id === userData.id ? { ...u, ...userData, lastActive: Date.now() } : u)
+          });
+        } else if (userData.id) {
+          set({
+            presence: [...presence, { 
+              id: userData.id, 
+              name: userData.name || 'Anonymous', 
+              color: userData.color || '#3b82f6',
+              x: userData.x || 0,
+              y: userData.y || 0,
+              lastActive: Date.now()
+            }]
+          });
+        }
+      },
 
       addPage: (name) => {
         const { pages } = get();

@@ -55,6 +55,8 @@ export default function Editor() {
 
     const type = active.data.current?.type as ComponentType;
     const isLibraryItem = active.data.current?.isLibraryItem;
+    const overId = over.id as string;
+    const overData = over.data.current;
 
     if (isLibraryItem && type) {
       const definition = COMPONENT_REGISTRY[type];
@@ -65,9 +67,6 @@ export default function Editor() {
         styles: { ...definition.defaultStyles },
         children: definition.isContainer ? [] : undefined,
       };
-
-      const overId = over.id as string;
-      const overData = over.data.current;
 
       if (overData?.isDropIndicator) {
         addElement(newElement, overData.parentId, overData.index);
@@ -80,6 +79,18 @@ export default function Editor() {
       }
       
       selectElement(newElement.id);
+    } else if (!isLibraryItem) {
+      // Handle reordering existing element
+      const elementId = active.id as string;
+      const { moveElementTo, elements } = useBuilderStore.getState();
+      
+      if (overData?.isDropIndicator) {
+        moveElementTo(elementId, overData.parentId || null, overData.index);
+      } else if (overId === 'canvas-root') {
+        moveElementTo(elementId, null, elements.length);
+      } else if (overData?.isContainer) {
+        moveElementTo(elementId, overId, 0);
+      }
     }
   };
 

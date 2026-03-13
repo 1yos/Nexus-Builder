@@ -16,6 +16,13 @@ import {
   Navigation
 } from "lucide-react";
 
+export interface ComponentVariant {
+  id: string;
+  label: string;
+  styles: Styles;
+  props?: any;
+}
+
 export interface ComponentDefinition {
   type: ComponentType;
   label: string;
@@ -23,6 +30,7 @@ export interface ComponentDefinition {
   defaultProps: any;
   defaultStyles: Styles;
   isContainer?: boolean;
+  variants?: ComponentVariant[];
 }
 
 export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
@@ -38,6 +46,11 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       display: 'block',
       width: '100%',
     },
+    variants: [
+      { id: 'light', label: 'Light', styles: { backgroundColor: '#ffffff', color: '#111827' } },
+      { id: 'dark', label: 'Dark', styles: { backgroundColor: '#111827', color: '#ffffff' } },
+      { id: 'accent', label: 'Accent', styles: { backgroundColor: '#3b82f6', color: '#ffffff' } },
+    ]
   },
   container: {
     type: 'container',
@@ -91,6 +104,12 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       color: '#111827',
       marginBottom: '1rem',
     },
+    variants: [
+      { id: 'h1', label: 'H1', styles: { fontSize: '3.5rem', fontWeight: '800' } },
+      { id: 'h2', label: 'H2', styles: { fontSize: '2.5rem', fontWeight: '700' } },
+      { id: 'h3', label: 'H3', styles: { fontSize: '1.875rem', fontWeight: '600' } },
+      { id: 'display', label: 'Display', styles: { fontSize: '5rem', fontWeight: '900', letterSpacing: '-0.05em' } },
+    ]
   },
   paragraph: {
     type: 'paragraph',
@@ -103,6 +122,10 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       color: '#4b5563',
       marginBottom: '1rem',
     },
+    variants: [
+      { id: 'lead', label: 'Lead', styles: { fontSize: '1.25rem', color: '#374151' } },
+      { id: 'small', label: 'Small', styles: { fontSize: '0.875rem', color: '#6b7280' } },
+    ]
   },
   button: {
     type: 'button',
@@ -118,6 +141,12 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       display: 'inline-block',
       textAlign: 'center',
     },
+    variants: [
+      { id: 'primary', label: 'Primary', styles: { backgroundColor: '#3b82f6', color: '#ffffff', border: 'none' } },
+      { id: 'secondary', label: 'Secondary', styles: { backgroundColor: '#111827', color: '#ffffff', border: 'none' } },
+      { id: 'outline', label: 'Outline', styles: { backgroundColor: 'transparent', color: '#3b82f6', border: '2px solid #3b82f6' } },
+      { id: 'ghost', label: 'Ghost', styles: { backgroundColor: 'transparent', color: '#3b82f6', border: 'none' } },
+    ]
   },
   image: {
     type: 'image',
@@ -175,7 +204,11 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
         { id: '1', label: 'Home', href: '/', type: 'internal' },
         { id: '2', label: 'About', href: '/about', type: 'internal' },
         { id: '3', label: 'Contact', href: '/contact', type: 'internal' }
-      ] 
+      ],
+      mobileMenuType: 'hamburger',
+      hamburgerColor: '#111827',
+      hamburgerSize: '24px',
+      showMobileMenu: false // State for editor preview
     },
     defaultStyles: {
       padding: '1rem 2rem',

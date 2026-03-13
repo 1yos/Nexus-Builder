@@ -4,8 +4,10 @@ import React from 'react';
 import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon } from 'lucide-react';
+import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Sparkles, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import AIPanel from './AIPanel';
+import CodePanel from './CodePanel';
 
 export default function LeftPanel() {
   const { leftPanelTab, setLeftPanelTab } = useBuilderStore();
@@ -33,10 +35,33 @@ export default function LeftPanel() {
           <Layers className="w-3.5 h-3.5" />
           Layers
         </button>
+        <button
+          onClick={() => setLeftPanelTab('ai')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors",
+            leftPanelTab === 'ai' ? "text-purple-500 border-b-2 border-purple-500 bg-purple-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          AI
+        </button>
+        <button
+          onClick={() => setLeftPanelTab('code')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors",
+            leftPanelTab === 'code' ? "text-emerald-500 border-b-2 border-emerald-500 bg-emerald-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <CodeIcon className="w-3.5 h-3.5" />
+          Code
+        </button>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
-        {leftPanelTab === 'components' ? <ComponentsTab /> : <LayersTab />}
+        {leftPanelTab === 'components' && <ComponentsTab />}
+        {leftPanelTab === 'layers' && <LayersTab />}
+        {leftPanelTab === 'ai' && <AIPanel />}
+        {leftPanelTab === 'code' && <CodePanel />}
       </div>
     </aside>
   );
@@ -172,12 +197,22 @@ function LayersTab() {
 }
 
 function LayerItem({ element, depth }: { element: ElementInstance; depth: number }) {
-  const { selectedElementId, selectElement, removeElement, updateElement, duplicateElement } = useBuilderStore();
+  const { 
+    selectedElementId, 
+    hoveredElementId,
+    selectElement, 
+    setHoveredElementId,
+    removeElement, 
+    updateElement, 
+    duplicateElement,
+    moveElement
+  } = useBuilderStore();
   const [isExpanded, setIsExpanded] = React.useState(true);
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempName, setTempName] = React.useState(element.name || COMPONENT_REGISTRY[element.type].label);
   
   const isSelected = selectedElementId === element.id;
+  const isHovered = hoveredElementId === element.id;
   const component = COMPONENT_REGISTRY[element.type];
   const Icon = component.icon as LucideIcon;
   const hasChildren = element.children && element.children.length > 0;
@@ -191,15 +226,18 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
     <div className="flex flex-col">
       <div
         onClick={() => !element.locked && selectElement(element.id)}
+        onMouseEnter={() => setHoveredElementId(element.id)}
+        onMouseLeave={() => setHoveredElementId(null)}
         onDoubleClick={() => setIsEditing(true)}
         className={cn(
-          "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors relative",
-          isSelected ? "bg-blue-600/20 text-blue-400" : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200",
+          "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all relative",
+          isSelected ? "bg-blue-600/20 text-blue-400" : isHovered ? "bg-zinc-800/50 text-zinc-200" : "hover:bg-zinc-800/30 text-zinc-400 hover:text-zinc-200",
           element.locked && "opacity-60 cursor-not-allowed"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
         {isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-blue-500 rounded-full" />}
+        {isHovered && !isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-zinc-600 rounded-full" />}
         
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           {hasChildren ? (
@@ -238,9 +276,50 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
           <button
             onClick={(e) => {
               e.stopPropagation();
+              moveElement(element.id, 'up');
+            }}
+            className="p-1 hover:bg-zinc-700 rounded transition-colors text-zinc-500 hover:text-zinc-200"
+            title="Move Up"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              moveElement(element.id, 'down');
+            }}
+            className="p-1 hover:bg-zinc-700 rounded transition-colors text-zinc-500 hover:text-zinc-200"
+            title="Move Down"
+          >
+            <ChevronDown className="w-3 h-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              moveElement(element.id, 'top');
+            }}
+            className="p-1 hover:bg-zinc-700 rounded transition-colors text-zinc-500 hover:text-zinc-200"
+            title="Move to Top"
+          >
+            <ArrowUpToLine className="w-3 h-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              moveElement(element.id, 'bottom');
+            }}
+            className="p-1 hover:bg-zinc-700 rounded transition-colors text-zinc-500 hover:text-zinc-200"
+            title="Move to Bottom"
+          >
+            <ArrowDownToLine className="w-3 h-3" />
+          </button>
+          <div className="w-px h-3 bg-zinc-700 mx-0.5" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
               duplicateElement(element.id);
             }}
-            className="p-1 hover:bg-zinc-700 rounded transition-colors"
+            className="p-1 hover:bg-zinc-700 rounded transition-colors text-zinc-500 hover:text-zinc-200"
             title="Duplicate"
           >
             <Copy className="w-3 h-3" />
@@ -252,7 +331,7 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
             }}
             className={cn(
               "p-1 hover:bg-zinc-700 rounded transition-colors",
-              element.locked ? "text-amber-500 opacity-100" : "text-zinc-500"
+              element.locked ? "text-amber-500 opacity-100" : "text-zinc-500 hover:text-zinc-200"
             )}
             title={element.locked ? "Unlock" : "Lock"}
           >
@@ -263,7 +342,7 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
               e.stopPropagation();
               updateElement(element.id, { styles: { ...element.styles, display: element.styles.display === 'none' ? undefined : 'none' } });
             }}
-            className="p-1 hover:bg-zinc-700 rounded transition-colors"
+            className="p-1 hover:bg-zinc-700 rounded transition-colors text-zinc-500 hover:text-zinc-200"
             title={element.styles.display === 'none' ? "Show" : "Hide"}
           >
             {element.styles.display === 'none' ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -273,7 +352,7 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
               e.stopPropagation();
               removeElement(element.id);
             }}
-            className="p-1 hover:bg-zinc-700 rounded hover:text-red-400 transition-colors"
+            className="p-1 hover:bg-zinc-700 rounded hover:text-red-400 transition-colors text-zinc-500"
             title="Delete"
           >
             <Trash2 className="w-3 h-3" />
