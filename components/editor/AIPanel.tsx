@@ -6,8 +6,6 @@ import { GoogleGenAI } from "@google/genai";
 import { Sparkles, Loader2, Send, Wand2, History, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY as string });
-
 export default function AIPanel() {
   const [prompt, setPrompt] = useState('');
   const { addElement, isAiGenerating, setAiGenerating } = useBuilderStore();
@@ -16,6 +14,13 @@ export default function AIPanel() {
   const generateLayout = async () => {
     if (!prompt.trim() || isAiGenerating) return;
 
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('Gemini API key is missing. Please check your environment variables.');
+      return;
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     setAiGenerating(true);
     try {
       const response = await ai.models.generateContent({
