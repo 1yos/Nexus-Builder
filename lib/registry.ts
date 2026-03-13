@@ -254,7 +254,7 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
     type: 'footer',
     label: 'Footer',
     icon: Layout,
-    defaultProps: { copyright: '© 2024 Nexus Builder' },
+    defaultProps: { copyright: '© 2026 Nexus Builder' },
     defaultStyles: {
       padding: '4rem 2rem',
       backgroundColor: '#111827',
