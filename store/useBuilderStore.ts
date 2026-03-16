@@ -97,13 +97,12 @@ interface BuilderState {
   deviceMode: DeviceMode;
   editorMode: EditorMode;
   isPreview: boolean;
-  leftPanelTab: 'components' | 'layers' | 'ai' | 'code';
+  leftPanelTab: 'components' | 'layers' | 'code';
   rightPanelTab: 'style' | 'content' | 'layout' | 'animations';
   history: Page[][];
   historyIndex: number;
   globalComponents: Record<string, ElementInstance>;
   presence: PresenceUser[];
-  isAiGenerating: boolean;
   zoom: number;
   pan: { x: number; y: number };
   
@@ -119,7 +118,7 @@ interface BuilderState {
   moveElementTo: (id: string, parentId: string | null, index: number) => void;
   setDeviceMode: (mode: DeviceMode) => void;
   setEditorMode: (mode: EditorMode) => void;
-  setLeftPanelTab: (tab: 'components' | 'layers' | 'ai' | 'code') => void;
+  setLeftPanelTab: (tab: 'components' | 'layers' | 'code') => void;
   setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations') => void;
   setZoom: (zoom: number) => void;
   setPan: (pan: { x: number; y: number }) => void;
@@ -135,9 +134,6 @@ interface BuilderState {
   // Global Components
   convertToGlobal: (id: string) => void;
   
-  // AI
-  setAiGenerating: (isGenerating: boolean) => void;
-
   // Presence
   updatePresence: (user: Partial<PresenceUser>) => void;
 
@@ -169,7 +165,6 @@ export const useBuilderStore = create<BuilderState>()(
       historyIndex: 0,
       globalComponents: {},
       presence: [],
-      isAiGenerating: false,
       zoom: 1,
       pan: { x: 0, y: 0 },
 
@@ -452,8 +447,6 @@ export const useBuilderStore = create<BuilderState>()(
           get().saveToHistory();
         }
       },
-
-      setAiGenerating: (isAiGenerating) => set({ isAiGenerating }),
 
       updatePresence: (userData) => {
         const { presence } = get();

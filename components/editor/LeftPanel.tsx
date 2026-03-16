@@ -4,9 +4,8 @@ import React from 'react';
 import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Sparkles, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine } from 'lucide-react';
+import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import AIPanel from './AIPanel';
 import CodePanel from './CodePanel';
 
 export default function LeftPanel() {
@@ -36,16 +35,6 @@ export default function LeftPanel() {
           Layers
         </button>
         <button
-          onClick={() => setLeftPanelTab('ai')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors",
-            leftPanelTab === 'ai' ? "text-purple-500 border-b-2 border-purple-500 bg-purple-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
-          )}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          AI
-        </button>
-        <button
           onClick={() => setLeftPanelTab('code')}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors",
@@ -60,7 +49,6 @@ export default function LeftPanel() {
       <div className="flex-1 overflow-hidden flex flex-col">
         {leftPanelTab === 'components' && <ComponentsTab />}
         {leftPanelTab === 'layers' && <LayersTab />}
-        {leftPanelTab === 'ai' && <AIPanel />}
         {leftPanelTab === 'code' && <CodePanel />}
       </div>
     </aside>
