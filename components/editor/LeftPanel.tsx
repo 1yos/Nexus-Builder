@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
+import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft } from 'lucide-react';
+import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
 
@@ -40,6 +41,12 @@ export default function LeftPanel() {
           >
             <CodeIcon className="w-5 h-5" />
           </button>
+          <button
+            onClick={() => { setLeftPanelTab('tokens'); setLeftPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'tokens' ? "text-amber-500 bg-amber-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <Palette className="w-5 h-5" />
+          </button>
         </div>
       </aside>
     );
@@ -55,36 +62,46 @@ export default function LeftPanel() {
         <ChevronLeft className="w-4 h-4" />
       </button>
 
-      <div className="flex border-b border-zinc-800">
+      <div className="grid grid-cols-4 border-b border-zinc-800">
         <button
           onClick={() => setLeftPanelTab('components')}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'components' ? "text-blue-500 border-b-2 border-blue-500 bg-blue-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Box className="w-3.5 h-3.5" />
-          Components
+          <Box className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate w-full text-center px-1">Components</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('layers')}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'layers' ? "text-blue-500 border-b-2 border-blue-500 bg-blue-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Layers className="w-3.5 h-3.5" />
-          Layers
+          <Layers className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate w-full text-center px-1">Layers</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('code')}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'code' ? "text-emerald-500 border-b-2 border-emerald-500 bg-emerald-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <CodeIcon className="w-3.5 h-3.5" />
-          Code
+          <CodeIcon className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate w-full text-center px-1">Code</span>
+        </button>
+        <button
+          onClick={() => setLeftPanelTab('tokens')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            leftPanelTab === 'tokens' ? "text-amber-500 border-b-2 border-amber-500 bg-amber-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <Palette className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate w-full text-center px-1">Tokens</span>
         </button>
       </div>
 
@@ -92,6 +109,7 @@ export default function LeftPanel() {
         {leftPanelTab === 'components' && <ComponentsTab />}
         {leftPanelTab === 'layers' && <LayersTab />}
         {leftPanelTab === 'code' && <CodePanel />}
+        {leftPanelTab === 'tokens' && <TokensTab />}
       </div>
     </aside>
   );
@@ -205,28 +223,145 @@ function DraggableComponent({ type }: { type: keyof typeof COMPONENT_REGISTRY })
   );
 }
 
-function LayersTab() {
-  const { elements } = useBuilderStore();
+function TokensTab() {
+  const { tokens, addToken, updateToken, removeToken } = useBuilderStore();
 
   return (
-    <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-      {elements.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full text-zinc-600 p-8 text-center">
-          <Layers className="w-8 h-8 mb-3 opacity-20" />
-          <p className="text-xs">No elements on this page yet.</p>
-        </div>
-      ) : (
-        <div className="space-y-0.5">
-          {elements.map((element) => (
-            <LayerItem key={element.id} element={element} depth={0} />
-          ))}
-        </div>
-      )}
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Design Tokens</h3>
+        <button
+          onClick={() => addToken({
+            id: uuidv4(),
+            name: 'New Token',
+            value: '#000000',
+            type: 'color',
+            category: 'brand'
+          })}
+          className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-all"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+        {['color', 'spacing', 'font-size'].map(type => {
+          const filteredTokens = tokens.filter(t => t.type === type);
+          if (filteredTokens.length === 0 && type !== 'color') return null;
+
+          return (
+            <div key={type} className="space-y-3">
+              <h4 className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-1">{type}s</h4>
+              <div className="space-y-2">
+                {filteredTokens.map(token => (
+                  <div key={token.id} className="group p-2 bg-zinc-800/50 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all space-y-2">
+                    <div className="flex items-center justify-between">
+                      <input
+                        type="text"
+                        value={token.name}
+                        onChange={(e) => updateToken(token.id, { name: e.target.value })}
+                        className="bg-transparent text-[11px] font-medium text-zinc-200 focus:outline-none w-2/3"
+                      />
+                      <button
+                        onClick={() => removeToken(token.id)}
+                        className="p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {token.type === 'color' ? (
+                        <div className="relative w-6 h-6 rounded border border-zinc-700 overflow-hidden shrink-0">
+                          <input
+                            type="color"
+                            value={token.value}
+                            onChange={(e) => updateToken(token.id, { value: e.target.value })}
+                            className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
+                          />
+                        </div>
+                      ) : null}
+                      <input
+                        type="text"
+                        value={token.value}
+                        onChange={(e) => updateToken(token.id, { value: e.target.value })}
+                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 font-mono"
+                      />
+                    </div>
+                  </div>
+                ))}
+                {filteredTokens.length === 0 && (
+                  <p className="text-[10px] text-zinc-600 italic px-1">No {type} tokens yet.</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function LayerItem({ element, depth }: { element: ElementInstance; depth: number }) {
+function LayersTab() {
+  const { elements, groupElements } = useBuilderStore();
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="p-2 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+        <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider px-2">Layers</h3>
+        {selectedIds.length >= 2 && (
+          <button
+            onClick={() => {
+              groupElements(selectedIds);
+              setSelectedIds([]);
+            }}
+            className="flex items-center gap-1.5 px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold uppercase rounded transition-all"
+          >
+            <Group className="w-3 h-3" />
+            Group ({selectedIds.length})
+          </button>
+        )}
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+        {elements.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-600 p-8 text-center">
+            <Layers className="w-8 h-8 mb-3 opacity-20" />
+            <p className="text-xs">No elements on this page yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {elements.map((element) => (
+              <LayerItem 
+                key={element.id} 
+                element={element} 
+                depth={0} 
+                selectedIds={selectedIds}
+                toggleSelect={toggleSelect}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LayerItem({ 
+  element, 
+  depth, 
+  selectedIds, 
+  toggleSelect 
+}: { 
+  element: ElementInstance; 
+  depth: number;
+  selectedIds: string[];
+  toggleSelect: (id: string) => void;
+}) {
   const { 
     selectedElementId, 
     hoveredElementId,
@@ -235,7 +370,9 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
     removeElement, 
     updateElement, 
     duplicateElement,
-    moveElement
+    moveElement,
+    isolatedElementId,
+    setIsolatedElementId
   } = useBuilderStore();
   const [isExpanded, setIsExpanded] = React.useState(true);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -270,6 +407,16 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
         {isHovered && !isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-zinc-600 rounded-full" />}
         
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(element.id)}
+            onChange={(e) => {
+              e.stopPropagation();
+              toggleSelect(element.id);
+            }}
+            className="w-3 h-3 rounded border-zinc-700 bg-zinc-800 text-blue-600 focus:ring-0 focus:ring-offset-0 transition-all opacity-0 group-hover:opacity-100 checked:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+          />
           {hasChildren ? (
             <button
               onClick={(e) => {
@@ -306,6 +453,20 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
           "items-center gap-0.5 ml-auto shrink-0",
           isSelected ? "flex" : "hidden group-hover:flex"
         )}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsolatedElementId(element.id === isolatedElementId ? null : element.id);
+            }}
+            className={cn(
+              "p-1 hover:bg-zinc-700 rounded transition-colors",
+              isolatedElementId === element.id ? "text-blue-500" : "text-zinc-500 hover:text-zinc-200"
+            )}
+            title="Isolate"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </button>
+          <div className="w-px h-3 bg-zinc-700 mx-0.5" />
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -396,7 +557,13 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
       {hasChildren && isExpanded && (
         <div className="flex flex-col">
           {element.children!.map((child) => (
-            <LayerItem key={child.id} element={child} depth={depth + 1} />
+            <LayerItem 
+              key={child.id} 
+              element={child} 
+              depth={depth + 1} 
+              selectedIds={selectedIds}
+              toggleSelect={toggleSelect}
+            />
           ))}
         </div>
       )}

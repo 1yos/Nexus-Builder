@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import NextImage from 'next/image';
 import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,6 +29,7 @@ import {
   Heart,
   Globe,
   Layout,
+  Plus,
   Type,
   Image as ImageIcon,
   MousePointer2,
@@ -57,8 +59,41 @@ export default function Canvas() {
     zoom, 
     setZoom,
     pan,
-    setPan
+    setPan,
+    tokens,
+    isolatedElementId,
+    setIsolatedElementId,
+    showOutlines,
+    setShowOutlines,
+    showEmptySlots,
+    setShowEmptySlots
   } = useBuilderStore();
+
+  const elementsToRender = React.useMemo(() => {
+    if (!isolatedElementId) return elements;
+    
+    const findInTree = (items: ElementInstance[], id: string): ElementInstance | null => {
+      for (const item of items) {
+        if (item.id === id) return item;
+        if (item.children) {
+          const found = findInTree(item.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const isolated = findInTree(elements, isolatedElementId);
+    return isolated ? [isolated] : elements;
+  }, [elements, isolatedElementId]);
+
+  const tokenStyles = React.useMemo(() => {
+    const styles: Record<string, string> = {};
+    tokens.forEach(token => {
+      styles[`--token-${token.id}`] = token.value;
+    });
+    return styles;
+  }, [tokens]);
 
   const { setNodeRef, isOver } = useDroppable({
     id: 'canvas-root',
@@ -137,6 +172,29 @@ export default function Canvas() {
       onMouseDown={handleMouseDown}
     >
       {!isPreview && (
+        <div className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 p-1 rounded-lg shadow-xl">
+          <button 
+            onClick={() => setShowOutlines(!showOutlines)}
+            className={cn(
+              "px-2 py-1 text-[9px] font-bold uppercase tracking-tighter rounded transition-all",
+              showOutlines ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Outlines
+          </button>
+          <button 
+            onClick={() => setShowEmptySlots(!showEmptySlots)}
+            className={cn(
+              "px-2 py-1 text-[9px] font-bold uppercase tracking-tighter rounded transition-all",
+              showEmptySlots ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Slots
+          </button>
+        </div>
+      )}
+
+      {!isPreview && (
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 p-1 rounded-lg shadow-xl">
           <button 
             onClick={() => setZoom(Math.max(zoom - 0.1, 0.25))}
@@ -175,7 +233,8 @@ export default function Canvas() {
           style={{ 
             width: getCanvasWidth(),
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'top center'
+            transformOrigin: 'top center',
+            ...tokenStyles
           }}
           className={cn(
             "min-h-[80vh] bg-white shadow-2xl transition-all relative",
@@ -209,7 +268,19 @@ export default function Canvas() {
           )}
 
           <AnimatePresence>
-            {elements.length === 0 ? (
+            {isolatedElementId && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-lg">
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                Isolation Mode
+                <button 
+                  onClick={() => setIsolatedElementId(null)}
+                  className="ml-2 hover:text-blue-200 transition-colors"
+                >
+                  Exit
+                </button>
+              </div>
+            )}
+            {elementsToRender.length === 0 ? (
               <div className="h-[70vh] flex flex-col items-center justify-center text-zinc-300 p-12 text-center">
                 <div className="w-20 h-20 border-2 border-dashed border-zinc-200 rounded-2xl mb-6 flex items-center justify-center bg-zinc-50">
                   <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
@@ -224,7 +295,7 @@ export default function Canvas() {
             ) : (
               <>
                 <DropIndicator index={0} />
-                {elements.map((element, idx) => (
+                {elementsToRender.map((element, idx) => (
                   <React.Fragment key={element.id}>
                     <RenderElement element={element} index={idx} />
                     <DropIndicator index={idx + 1} />
@@ -281,7 +352,12 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     removeElement,
     duplicateElement,
     deviceMode,
-    moveElement
+    moveElement,
+    elements,
+    showOutlines,
+    showEmptySlots,
+    playingAnimationId,
+    setPlayingAnimationId
   } = useBuilderStore();
   
   const [isEditing, setIsEditing] = React.useState(false);
@@ -315,8 +391,37 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     disabled: isPreview || element.locked,
   });
 
+  const executeInteraction = (interaction: any) => {
+    if (!interaction.targetId) return;
+    
+    if (interaction.action === 'show') {
+      updateElement(interaction.targetId, { styles: { ...((findElement(elements, interaction.targetId) || {}).styles || {}), display: 'block' } });
+    } else if (interaction.action === 'hide') {
+      updateElement(interaction.targetId, { styles: { ...((findElement(elements, interaction.targetId) || {}).styles || {}), display: 'none' } });
+    } else if (interaction.action === 'scroll-to') {
+      const target = document.getElementById(interaction.targetId);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const findElement = (items: ElementInstance[], id: string): ElementInstance | null => {
+    for (const item of items) {
+      if (item.id === id) return item;
+      if (item.children) {
+        const found = findElement(item.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const handleClick = (e: React.MouseEvent) => {
-    if (isPreview || element.locked) return;
+    if (isPreview) {
+      const clickInteractions = element.interactions?.filter(i => i.trigger === 'click') || [];
+      clickInteractions.forEach(executeInteraction);
+      return;
+    }
+    if (element.locked) return;
     e.stopPropagation();
     selectElement(element.id);
   };
@@ -375,7 +480,14 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     style,
     onClick: handleClick,
     onDoubleClick: handleDoubleClick,
-    onMouseEnter: () => !isPreview && setHoveredElementId(element.id),
+    onMouseEnter: () => {
+      if (!isPreview) {
+        setHoveredElementId(element.id);
+      } else {
+        const hoverInteractions = element.interactions?.filter(i => i.trigger === 'hover') || [];
+        hoverInteractions.forEach(executeInteraction);
+      }
+    },
     onMouseLeave: () => !isPreview && setHoveredElementId(null),
     className: cn(
       "relative group transition-all duration-300",
@@ -383,6 +495,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       !isPreview && !isSelected && isHovered && !element.locked && "outline outline-1 outline-purple-400/50 outline-offset-[-1px] z-10",
       !isPreview && !isSelected && !isHovered && !element.locked && "hover:outline hover:outline-1 hover:outline-purple-400/50 hover:outline-offset-[-1px]",
       !isPreview && isOver && definition.isContainer && "bg-purple-500/5 ring-2 ring-purple-400 ring-inset",
+      showOutlines && !isPreview && "outline outline-1 outline-blue-500/20",
       element.locked && "opacity-80 cursor-not-allowed"
     )
   };
@@ -449,20 +562,37 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       {...attributes}
       {...listeners}
     >
-      <span className="bg-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-t-sm uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-purple-900/20">
+      <span className={cn(
+        "text-[9px] font-bold px-2 py-0.5 rounded-t-sm uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-purple-900/20",
+        element.isMaster ? "bg-amber-600" : element.isSlot ? "bg-emerald-600" : "bg-purple-600"
+      )}>
         <Move className="w-2.5 h-2.5" />
-        {element.type}
+        {element.isMaster ? `Master: ${element.type}` : element.isSlot ? `Slot: ${element.type}` : element.type}
       </span>
       {element.locked && <Lock className="w-2.5 h-2.5 text-zinc-400" />}
     </div>
   );
 
   const renderChildren = () => {
-    if (!element.children) return null;
+    const isEmpty = !element.children || element.children.length === 0;
+    
+    if (isEmpty && element.isSlot && showEmptySlots && !isPreview) {
+      return (
+        <div className="w-full min-h-[100px] border-2 border-dashed border-emerald-500/30 rounded-lg flex flex-col items-center justify-center gap-2 bg-emerald-500/5 m-2">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <Plus className="w-4 h-4 text-emerald-500" />
+          </div>
+          <span className="text-[10px] font-bold text-emerald-500/50 uppercase tracking-widest">Empty Slot</span>
+        </div>
+      );
+    }
+
+    if (isEmpty) return null;
+
     return (
       <>
         <DropIndicator parentId={element.id} index={0} />
-        {element.children.map((child, idx) => (
+        {element.children!.map((child, idx) => (
           <React.Fragment key={child.id}>
             <RenderElement element={child} index={idx} parentId={element.id} />
             <DropIndicator parentId={element.id} index={idx + 1} />
@@ -473,35 +603,147 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
   };
 
   const getAnimationProps = () => {
-    if (isPreview && element.animations && element.animations.length > 0) {
-      const anim = element.animations[0];
-      const transition = { duration: anim.duration, delay: anim.delay, ease: anim.ease as any };
-      
-      switch (anim.type) {
-        case 'fade':
-          return { initial: { opacity: 0 }, animate: { opacity: 1 }, transition };
-        case 'slide':
-          return { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition };
-        case 'scale':
-          return { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 }, transition };
-        case 'rotate':
-          return { initial: { rotate: -10 }, animate: { rotate: 0 }, transition };
-        case 'bounce':
-          return { animate: { y: [0, -10, 0] }, transition: { duration: anim.duration, repeat: Infinity, ease: "easeInOut" as any } };
-        default:
-          return {};
+    const animProps: any = {};
+    let key: string | undefined;
+    const isPlaying = (animId: string) => playingAnimationId === animId;
+    
+    if ((isPreview || playingAnimationId) && element.animations && element.animations.length > 0) {
+      // Group animations by trigger
+      const loadAnims = element.animations.filter(a => a.trigger === 'load' || !a.trigger || isPlaying(a.id));
+      const scrollAnims = element.animations.filter(a => a.trigger === 'scroll' && !isPlaying(a.id));
+      const hoverAnims = element.animations.filter(a => a.trigger === 'hover' && !isPlaying(a.id));
+      const clickAnims = element.animations.filter(a => a.trigger === 'click' && !isPlaying(a.id));
+
+      const processAnim = (anim: any) => {
+        const transition = { 
+          duration: anim.duration, 
+          delay: isPlaying(anim.id) ? 0 : anim.delay, 
+          ease: anim.ease as any,
+          repeat: anim.repeat === 'infinity' ? Infinity : anim.repeat || 0,
+          repeatType: "reverse"
+        };
+        
+        let initial = {};
+        let animate = {};
+        let exit = {};
+        
+        switch (anim.type) {
+          case 'fade':
+            initial = { opacity: 0 };
+            animate = { opacity: 1 };
+            exit = { opacity: 0 };
+            break;
+          case 'slide-up':
+            initial = { opacity: 0, y: 40 };
+            animate = { opacity: 1, y: 0 };
+            exit = { opacity: 0, y: -40 };
+            break;
+          case 'slide-down':
+            initial = { opacity: 0, y: -40 };
+            animate = { opacity: 1, y: 0 };
+            exit = { opacity: 0, y: 40 };
+            break;
+          case 'slide-left':
+            initial = { opacity: 0, x: 40 };
+            animate = { opacity: 1, x: 0 };
+            exit = { opacity: 0, x: -40 };
+            break;
+          case 'slide-right':
+            initial = { opacity: 0, x: -40 };
+            animate = { opacity: 1, x: 0 };
+            exit = { opacity: 0, x: 40 };
+            break;
+          case 'scale':
+            initial = { opacity: 0, scale: 0.5 };
+            animate = { opacity: 1, scale: 1 };
+            exit = { opacity: 0, scale: 0.5 };
+            break;
+          case 'rotate':
+            initial = { opacity: 0, rotate: -180 };
+            animate = { opacity: 1, rotate: 0 };
+            exit = { opacity: 0, rotate: 180 };
+            break;
+          case 'bounce':
+            animate = { y: [0, -20, 0] };
+            break;
+          case 'flip':
+            initial = { rotateY: 180, opacity: 0 };
+            animate = { rotateY: 0, opacity: 1 };
+            exit = { rotateY: -180, opacity: 0 };
+            break;
+          case 'pulse':
+            animate = { scale: [1, 1.05, 1] };
+            break;
+          case 'float':
+            animate = { y: [0, -10, 0] };
+            transition.repeat = Infinity;
+            transition.repeatType = "mirror";
+            break;
+        }
+        return { initial, animate, exit, transition };
+      };
+
+      // If we are playing a specific animation, prioritize it as a load animation for preview
+      const activeAnim = element.animations.find(a => isPlaying(a.id));
+      if (activeAnim) {
+        const { initial, animate, exit, transition } = processAnim(activeAnim);
+        key = `playing-${activeAnim.id}`;
+        Object.assign(animProps, { 
+          initial, 
+          animate, 
+          exit,
+          transition,
+          onAnimationComplete: () => setPlayingAnimationId(null)
+        });
+        return { animProps, key };
+      }
+
+      // Apply load animations
+      if (loadAnims.length > 0) {
+        const { initial, animate, exit, transition } = processAnim(loadAnims[0]);
+        Object.assign(animProps, { initial, animate, exit, transition });
+      }
+
+      // Apply scroll animations
+      if (scrollAnims.length > 0) {
+        const { initial, animate, transition } = processAnim(scrollAnims[0]);
+        Object.assign(animProps, { 
+          initial, 
+          whileInView: animate, 
+          viewport: { once: true, margin: "-100px" },
+          transition 
+        });
+      }
+
+      // Apply hover animations
+      if (hoverAnims.length > 0) {
+        const { animate, transition } = processAnim(hoverAnims[0]);
+        Object.assign(animProps, { whileHover: animate, transition });
+      }
+
+      // Apply click animations
+      if (clickAnims.length > 0) {
+        const { animate, transition } = processAnim(clickAnims[0]);
+        Object.assign(animProps, { whileTap: animate, transition });
       }
     }
-    return {};
+
+    if (isPreview) {
+      if (element.hoverStyles && !animProps.whileHover) animProps.whileHover = element.hoverStyles;
+      if (element.activeStyles && !animProps.whileTap) animProps.whileTap = element.activeStyles;
+      if (element.focusStyles && !animProps.whileFocus) animProps.whileFocus = element.focusStyles;
+    }
+
+    return { animProps, key };
   };
 
   const content = (() => {
-    const animProps = getAnimationProps();
+    const { animProps, key: animKey } = getAnimationProps();
     
     switch (element.type) {
       case 'section':
         return (
-          <motion.section {...commonProps} {...animProps}>
+          <motion.section id={element.id} key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
@@ -509,7 +751,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'container':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div id={element.id} key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
@@ -518,7 +760,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       case 'heading':
         const Tag = motion[`h${element.props.level || 1}` as keyof typeof motion] as any;
         return (
-          <Tag {...commonProps} {...animProps}>
+          <Tag key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {isEditing ? (
@@ -538,7 +780,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'paragraph':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {isEditing ? (
@@ -559,6 +801,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       case 'button':
         return (
           <motion.a 
+            key={animKey || element.id}
             href={element.props.href} 
             {...commonProps} 
             {...animProps}
@@ -587,18 +830,25 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       case 'image':
         return (
           <motion.div 
+            key={animKey || element.id}
             className="relative inline-block" 
             style={{ width: style.width, height: style.height }}
             {...animProps}
           >
             {badge}
             {actionButtons}
-            <img src={element.props.src} alt={element.props.alt} {...commonProps} className={cn(commonProps.className, "w-full h-full object-cover")} />
+            <NextImage 
+              src={element.props.src || 'https://picsum.photos/seed/nexus/800/600'} 
+              alt={element.props.alt || 'Image'} 
+              fill
+              className={cn(commonProps.className, "object-cover")}
+              referrerPolicy="no-referrer"
+            />
           </motion.div>
         );
       case 'grid':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
@@ -606,7 +856,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'flex':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
@@ -615,7 +865,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       case 'icon':
         const IconComp = LUCIDE_ICONS[element.props.icon || 'Star'] || Star;
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             <IconComp 
@@ -630,7 +880,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'divider':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             <div className="w-full h-px" style={{ backgroundColor: style.backgroundColor }} />
@@ -638,7 +888,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'spacer':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
           </motion.div>
@@ -649,13 +899,21 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         const showHamburger = isMobile && element.props.mobileMenuType === 'hamburger';
 
         return (
-          <motion.nav {...commonProps} {...animProps} className={cn(commonProps.className, "relative")}>
+          <motion.nav key={animKey || element.id} {...commonProps} {...animProps} className={cn(commonProps.className, "relative")}>
             {badge}
             {actionButtons}
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-4">
                 {element.props.logoType === 'image' && element.props.logoSrc ? (
-                  <img src={element.props.logoSrc} alt="Logo" className="h-8 w-auto" />
+                  <div className="relative h-8 w-32">
+                    <NextImage 
+                      src={element.props.logoSrc} 
+                      alt="Logo" 
+                      fill 
+                      className="object-contain object-left"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
                 ) : (
                   <div className="font-bold text-xl">{element.props.logoText || 'Nexus'}</div>
                 )}
@@ -724,7 +982,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'hero':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
@@ -732,7 +990,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'card':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
@@ -740,7 +998,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'footer':
         return (
-          <motion.footer {...commonProps} {...animProps}>
+          <motion.footer key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             <div>{element.props.copyright}</div>
@@ -748,7 +1006,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'pricing':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
@@ -756,14 +1014,14 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'features':
         return (
-          <motion.div {...commonProps} {...animProps}>
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
             {renderChildren()}
           </motion.div>
         );
       default:
-        return <motion.div {...commonProps} {...animProps}>{badge}{actionButtons}{element.type}</motion.div>;
+        return <motion.div key={animKey || element.id} {...commonProps} {...animProps}>{badge}{actionButtons}{element.type}</motion.div>;
     }
   })();
 

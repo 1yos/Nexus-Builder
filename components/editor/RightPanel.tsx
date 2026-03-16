@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useBuilderStore, ComponentType } from '@/store/useBuilderStore';
+import { useBuilderStore, ComponentType, ElementInstance } from '@/store/useBuilderStore';
+import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
 import { 
@@ -49,8 +50,14 @@ export default function RightPanel() {
     duplicateElement,
     rightPanelCollapsed,
     setRightPanelCollapsed,
-    deviceMode
+    deviceMode,
+    tokens,
+    updateGlobalComponent,
+    playingAnimationId,
+    setPlayingAnimationId
   } = useBuilderStore();
+
+  const [selectedState, setSelectedState] = React.useState<'default' | 'hover' | 'active' | 'focus'>('default');
 
   if (rightPanelCollapsed) {
     return (
@@ -108,16 +115,22 @@ export default function RightPanel() {
   const getCurrentStyles = () => {
     if (!selectedElement) return {};
     const baseStyles = selectedElement.styles || {};
-    if (deviceMode === 'desktop') return baseStyles;
+    let stateStyles = {};
+    if (selectedState === 'hover') stateStyles = selectedElement.hoverStyles || {};
+    else if (selectedState === 'active') stateStyles = selectedElement.activeStyles || {};
+    else if (selectedState === 'focus') stateStyles = selectedElement.focusStyles || {};
+
+    const combinedBase = { ...baseStyles, ...stateStyles };
+    if (deviceMode === 'desktop') return combinedBase;
     
     const responsive = selectedElement.responsiveStyles || {};
     if (deviceMode === 'tablet') {
-      return { ...baseStyles, ...(responsive.tablet || {}) };
+      return { ...combinedBase, ...(responsive.tablet || {}) };
     }
     if (deviceMode === 'mobile') {
-      return { ...baseStyles, ...(responsive.tablet || {}), ...(responsive.mobile || {}) };
+      return { ...combinedBase, ...(responsive.tablet || {}), ...(responsive.mobile || {}) };
     }
-    return baseStyles;
+    return combinedBase;
   };
 
   const currentStyles = getCurrentStyles();
@@ -146,9 +159,18 @@ export default function RightPanel() {
   const handleStyleChange = (key: string, value: any) => {
     const { deviceMode } = useBuilderStore.getState();
     
+    if (selectedElement.isGlobal && selectedElement.isMaster) {
+      updateGlobalComponent(selectedElement.globalId!, {
+        styles: { ...selectedElement.styles, [key]: value }
+      });
+      return;
+    }
+
+    const styleKey = selectedState === 'default' ? 'styles' : `${selectedState}Styles`;
+    
     if (deviceMode === 'desktop') {
       updateElement(selectedElement.id, {
-        styles: { ...selectedElement.styles, [key]: value }
+        [styleKey]: { ...((selectedElement as any)[styleKey] || {}), [key]: value }
       });
     } else {
       const responsiveStyles = selectedElement.responsiveStyles || {};
@@ -171,6 +193,19 @@ export default function RightPanel() {
 
   const isLinkable = ['button', 'image', 'navbar'].includes(selectedElement.type);
 
+  const getAllElements = (items: ElementInstance[]): { id: string; name: string; type: string }[] => {
+    let result: { id: string; name: string; type: string }[] = [];
+    items.forEach(item => {
+      result.push({ id: item.id, name: item.name || `${item.type} (${item.id.split('-')[0]})`, type: item.type });
+      if (item.children) {
+        result = [...result, ...getAllElements(item.children)];
+      }
+    });
+    return result;
+  };
+
+  const allElements = getAllElements(elements);
+
   return (
     <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col h-full overflow-hidden relative group/sidebar">
       <button
@@ -190,9 +225,21 @@ export default function RightPanel() {
             <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-200">
               {COMPONENT_REGISTRY[selectedElement.type as ComponentType].label}
             </h2>
-            <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-tighter">
-              ID: {selectedElement.id.split('-')[0]}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-tighter truncate max-w-[100px]">
+                ID: {selectedElement.id}
+              </p>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedElement.id);
+                  // Optional: show a toast or temporary icon change
+                }}
+                className="p-0.5 hover:bg-zinc-800 rounded text-zinc-600 hover:text-zinc-400 transition-colors"
+                title="Copy full ID"
+              >
+                <Copy className="w-2.5 h-2.5" />
+              </button>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -222,7 +269,7 @@ export default function RightPanel() {
         </div>
       </div>
 
-      <div className="flex border-b border-zinc-800">
+      <div className="grid grid-cols-5 border-b border-zinc-800">
         <TabButton 
           active={rightPanelTab === 'content'} 
           onClick={() => setRightPanelTab('content')} 
@@ -247,11 +294,130 @@ export default function RightPanel() {
           icon={Activity} 
           label="Animate" 
         />
+        <TabButton 
+          active={rightPanelTab === 'interactions'} 
+          onClick={() => setRightPanelTab('interactions')} 
+          icon={MousePointer2} 
+          label="Interactions" 
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
         {rightPanelTab === 'content' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-200">
+            {selectedElement.isGlobal && (
+              <PropertySection title="Global Component" icon={Box}>
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2">
+                  <p className="text-[10px] text-amber-200/70 leading-relaxed">
+                    This is an instance of a global component. Editing styles here will update all instances.
+                  </p>
+                  {selectedElement.isMaster ? (
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                      Master Instance
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        // Logic to find and select master would go here
+                        alert("Navigating to Master Component...");
+                      }}
+                      className="text-[10px] font-bold text-amber-400 uppercase hover:underline"
+                    >
+                      Go to Master
+                    </button>
+                  )}
+                </div>
+              </PropertySection>
+            )}
+
+            <PropertySection title="Component Settings" icon={Settings2}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Component Name</label>
+                  <input
+                    type="text"
+                    value={selectedElement.name || ''}
+                    onChange={(e) => updateElement(selectedElement.id, { name: e.target.value })}
+                    placeholder={`${selectedElement.type} name...`}
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Mark as Slot</label>
+                  <button
+                    onClick={() => updateElement(selectedElement.id, { isSlot: !selectedElement.isSlot })}
+                    className={cn(
+                      "w-10 h-5 rounded-full transition-all relative",
+                      selectedElement.isSlot ? "bg-blue-600" : "bg-zinc-700"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
+                      selectedElement.isSlot ? "left-6" : "left-1"
+                    )} />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Variants</label>
+                    <button
+                      onClick={() => {
+                        const newVariant = {
+                          id: uuidv4(),
+                          name: `Variant ${((selectedElement.variants || []).length + 1)}`,
+                          styles: { ...selectedElement.styles }
+                        };
+                        updateElement(selectedElement.id, {
+                          variants: [...(selectedElement.variants || []), newVariant]
+                        });
+                      }}
+                      className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {(selectedElement.variants || []).map((variant: any) => (
+                      <div key={variant.id} className="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg border border-zinc-700">
+                        <input
+                          type="text"
+                          value={variant.name}
+                          onChange={(e) => {
+                            const newVariants = selectedElement.variants.map((v: any) => 
+                              v.id === variant.id ? { ...v, name: e.target.value } : v
+                            );
+                            updateElement(selectedElement.id, { variants: newVariants });
+                          }}
+                          className="flex-1 bg-transparent text-[10px] text-zinc-200 focus:outline-none"
+                        />
+                        <button
+                          onClick={() => updateElement(selectedElement.id, { activeVariantId: variant.id, styles: { ...variant.styles } })}
+                          className={cn(
+                            "px-2 py-1 rounded text-[9px] font-bold uppercase transition-all",
+                            selectedElement.activeVariantId === variant.id ? "bg-blue-600 text-white" : "bg-zinc-700 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          Apply
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newVariants = selectedElement.variants.filter((v: any) => v.id !== variant.id);
+                            updateElement(selectedElement.id, { variants: newVariants });
+                          }}
+                          className="p-1 text-zinc-600 hover:text-red-400"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </PropertySection>
+
             {selectedElement.props.text !== undefined && (
               <PropertySection title="Text Content" icon={TypeIcon}>
                 <textarea
@@ -443,6 +609,24 @@ export default function RightPanel() {
 
         {rightPanelTab === 'style' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-200">
+            <div className="space-y-2">
+              <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Visual State</label>
+              <div className="flex bg-zinc-800 rounded-md p-1 border border-zinc-700">
+                {['default', 'hover', 'active', 'focus'].map((state) => (
+                  <button
+                    key={state}
+                    onClick={() => setSelectedState(state as any)}
+                    className={cn(
+                      "flex-1 py-1 text-[10px] uppercase font-bold rounded transition-all",
+                      selectedState === state ? "bg-zinc-700 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    {state}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <PropertySection title="Typography" icon={TypeIcon}>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -755,42 +939,66 @@ export default function RightPanel() {
           <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-200">
             <PropertySection title="Animation Timeline" icon={Activity}>
               <div className="space-y-4">
-                <button
-                  onClick={() => {
-                    const newAnim = {
-                      id: Math.random().toString(36).substr(2, 9),
-                      type: 'fade',
-                      duration: 0.5,
-                      delay: 0,
-                      ease: 'easeInOut'
-                    };
-                    updateElement(selectedElement.id, {
-                      animations: [...(selectedElement.animations || []), newAnim]
-                    });
-                  }}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add Animation
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const newAnim = {
+                        id: uuidv4(),
+                        type: 'fade',
+                        duration: 0.6,
+                        delay: 0,
+                        ease: 'easeOut',
+                        trigger: 'load'
+                      };
+                      updateElement(selectedElement.id, {
+                        animations: [...(selectedElement.animations || []), newAnim]
+                      });
+                    }}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Animation
+                  </button>
+                  {selectedElement.animations && selectedElement.animations.length > 0 && (
+                    <button
+                      onClick={() => {
+                        // Play the first load animation as a preview
+                        const loadAnim = selectedElement.animations.find((a: any) => a.trigger === 'load' || !a.trigger);
+                        if (loadAnim) setPlayingAnimationId(loadAnim.id);
+                      }}
+                      className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all border border-zinc-700"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      Play All
+                    </button>
+                  )}
+                </div>
 
                 <div className="space-y-3">
                   {(selectedElement.animations || []).map((anim: any, index: number) => (
                     <div key={anim.id} className="p-3 bg-zinc-800 border border-zinc-700 rounded-xl space-y-3 relative group">
-                      <button
-                        onClick={() => {
-                          const newAnims = selectedElement.animations.filter((a: any) => a.id !== anim.id);
-                          updateElement(selectedElement.id, { animations: newAnims });
-                        }}
-                        className="absolute top-2 right-2 p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => setPlayingAnimationId(anim.id)}
+                          className="p-1 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-all"
+                          title="Preview Animation"
+                        >
+                          <Activity className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newAnims = selectedElement.animations.filter((a: any) => a.id !== anim.id);
+                            updateElement(selectedElement.id, { animations: newAnims });
+                          }}
+                          className="p-1 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                          title="Delete Animation"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
 
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-500/10 rounded flex items-center justify-center text-[10px] font-bold text-blue-400">
-                          {index + 1}
-                        </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Type</label>
                         <select
                           value={anim.type}
                           onChange={(e) => {
@@ -799,14 +1007,62 @@ export default function RightPanel() {
                             );
                             updateElement(selectedElement.id, { animations: newAnims });
                           }}
-                          className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-200"
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[10px] text-zinc-200"
                         >
                           <option value="fade">Fade In</option>
-                          <option value="slide">Slide Up</option>
+                          <option value="slide-up">Slide Up</option>
+                          <option value="slide-down">Slide Down</option>
+                          <option value="slide-left">Slide Left</option>
+                          <option value="slide-right">Slide Right</option>
                           <option value="scale">Scale Up</option>
-                          <option value="rotate">Rotate</option>
+                          <option value="rotate">Rotate In</option>
+                          <option value="flip">Flip</option>
                           <option value="bounce">Bounce</option>
+                          <option value="pulse">Pulse</option>
+                          <option value="float">Float (Infinite)</option>
                         </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Trigger</label>
+                          <select
+                            value={anim.trigger || 'load'}
+                            onChange={(e) => {
+                              const newAnims = selectedElement.animations.map((a: any) => 
+                                a.id === anim.id ? { ...a, trigger: e.target.value } : a
+                              );
+                              updateElement(selectedElement.id, { animations: newAnims });
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[10px] text-zinc-200"
+                          >
+                            <option value="load">On Load</option>
+                            <option value="scroll">On Scroll</option>
+                            <option value="hover">On Hover</option>
+                            <option value="click">On Click</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Easing</label>
+                          <select
+                            value={anim.ease || 'easeOut'}
+                            onChange={(e) => {
+                              const newAnims = selectedElement.animations.map((a: any) => 
+                                a.id === anim.id ? { ...a, ease: e.target.value } : a
+                              );
+                              updateElement(selectedElement.id, { animations: newAnims });
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[10px] text-zinc-200"
+                          >
+                            <option value="linear">Linear</option>
+                            <option value="easeIn">Ease In</option>
+                            <option value="easeOut">Ease Out</option>
+                            <option value="easeInOut">Ease In Out</option>
+                            <option value="backIn">Back In</option>
+                            <option value="backOut">Back Out</option>
+                            <option value="anticipate">Anticipate</option>
+                          </select>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -822,7 +1078,7 @@ export default function RightPanel() {
                               );
                               updateElement(selectedElement.id, { animations: newAnims });
                             }}
-                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-200"
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[10px] text-zinc-200"
                           />
                         </div>
                         <div className="space-y-1">
@@ -837,10 +1093,166 @@ export default function RightPanel() {
                               );
                               updateElement(selectedElement.id, { animations: newAnims });
                             }}
-                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-200"
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[10px] text-zinc-200"
                           />
                         </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PropertySection>
+          </div>
+        )}
+
+        {rightPanelTab === 'interactions' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-200">
+            <PropertySection title="Interaction Logic" icon={MousePointer2}>
+              <div className="space-y-4">
+                <button
+                  onClick={() => {
+                    const newInteraction = {
+                      id: uuidv4(),
+                      trigger: 'click',
+                      action: 'show',
+                    };
+                    updateElement(selectedElement.id, {
+                      interactions: [...(selectedElement.interactions || []), newInteraction]
+                    });
+                  }}
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Interaction
+                </button>
+
+                <div className="space-y-3">
+                  {(selectedElement.interactions || []).map((interaction: any) => (
+                    <div key={interaction.id} className="p-3 bg-zinc-800 border border-zinc-700 rounded-xl space-y-3 relative group">
+                      <button
+                        onClick={() => {
+                          const newInteractions = selectedElement.interactions.filter((i: any) => i.id !== interaction.id);
+                          updateElement(selectedElement.id, { interactions: newInteractions });
+                        }}
+                        className="absolute top-2 right-2 p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Trigger</label>
+                        <select
+                          value={interaction.trigger}
+                          onChange={(e) => {
+                            const newInteractions = selectedElement.interactions.map((i: any) => 
+                              i.id === interaction.id ? { ...i, trigger: e.target.value } : i
+                            );
+                            updateElement(selectedElement.id, { interactions: newInteractions });
+                          }}
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                        >
+                          <option value="click">On Click</option>
+                          <option value="hover">On Hover</option>
+                          <option value="scroll">On Scroll</option>
+                          <option value="load">On Load</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Action</label>
+                        <select
+                          value={interaction.action}
+                          onChange={(e) => {
+                            const newInteractions = selectedElement.interactions.map((i: any) => 
+                              i.id === interaction.id ? { ...i, action: e.target.value } : i
+                            );
+                            updateElement(selectedElement.id, { interactions: newInteractions });
+                          }}
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                        >
+                          <option value="show">Show Element</option>
+                          <option value="hide">Hide Element</option>
+                          <option value="scroll-to">Scroll To</option>
+                          <option value="navigate">Navigate to Page</option>
+                          <option value="open-modal">Open Modal</option>
+                        </select>
+                      </div>
+
+                      {['show', 'hide', 'scroll-to'].includes(interaction.action) && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Target Element</label>
+                            <button 
+                              onClick={() => {
+                                const isManual = interaction.useManualId;
+                                const newInteractions = selectedElement.interactions.map((i: any) => 
+                                  i.id === interaction.id ? { ...i, useManualId: !isManual } : i
+                                );
+                                updateElement(selectedElement.id, { interactions: newInteractions });
+                              }}
+                              className="text-[8px] font-bold text-blue-500 uppercase hover:underline"
+                            >
+                              {interaction.useManualId ? 'Use List' : 'Manual ID'}
+                            </button>
+                          </div>
+                          
+                          {interaction.useManualId ? (
+                            <input
+                              type="text"
+                              value={interaction.targetId || ''}
+                              onChange={(e) => {
+                                const newInteractions = selectedElement.interactions.map((i: any) => 
+                                  i.id === interaction.id ? { ...i, targetId: e.target.value } : i
+                                );
+                                updateElement(selectedElement.id, { interactions: newInteractions });
+                              }}
+                              placeholder="Paste element ID here..."
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <select
+                              value={interaction.targetId || ''}
+                              onChange={(e) => {
+                                const newInteractions = selectedElement.interactions.map((i: any) => 
+                                  i.id === interaction.id ? { ...i, targetId: e.target.value } : i
+                                );
+                                updateElement(selectedElement.id, { interactions: newInteractions });
+                              }}
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                            >
+                              <option value="">Select element...</option>
+                              <option value={selectedElement.id}>Self ({selectedElement.type})</option>
+                              {allElements
+                                .filter(el => el.id !== selectedElement.id)
+                                .map(el => (
+                                  <option key={el.id} value={el.id}>{el.name}</option>
+                                ))
+                              }
+                            </select>
+                          )}
+                        </div>
+                      )}
+
+                      {interaction.action === 'navigate' && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Target Page</label>
+                          <select
+                            value={interaction.value || ''}
+                            onChange={(e) => {
+                              const newInteractions = selectedElement.interactions.map((i: any) => 
+                                i.id === interaction.id ? { ...i, value: e.target.value } : i
+                              );
+                              updateElement(selectedElement.id, { interactions: newInteractions });
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                          >
+                            <option value="">Select page...</option>
+                            {pages.map(page => (
+                              <option key={page.id} value={page.id}>{page.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -858,12 +1270,12 @@ function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; on
     <button
       onClick={onClick}
       className={cn(
-        "flex-1 flex flex-col items-center justify-center gap-1.5 py-3 transition-all relative",
+        "flex flex-col items-center justify-center gap-1 py-2.5 transition-all relative overflow-hidden",
         active ? "text-blue-500" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
       )}
     >
-      <Icon className="w-3.5 h-3.5" />
-      <span className="text-[9px] font-bold uppercase tracking-wider">{label}</span>
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="text-[8px] font-bold uppercase tracking-tighter truncate w-full text-center px-0.5">{label}</span>
       {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />}
     </button>
   );

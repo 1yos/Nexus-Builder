@@ -38,10 +38,28 @@ export interface Styles {
 
 export interface Animation {
   id: string;
-  type: 'fade' | 'slide' | 'scale' | 'rotate' | 'bounce';
+  type: 'fade' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'scale' | 'rotate' | 'bounce' | 'flip' | 'pulse' | 'float';
   duration: number;
   delay: number;
   ease: string;
+  trigger: 'load' | 'scroll' | 'hover' | 'click';
+  repeat?: number | 'infinity';
+}
+
+export interface Interaction {
+  id: string;
+  trigger: 'click' | 'hover' | 'scroll' | 'load';
+  action: 'show' | 'hide' | 'scroll-to' | 'navigate' | 'open-modal';
+  targetId?: string;
+  value?: string;
+}
+
+export interface DesignToken {
+  id: string;
+  name: string;
+  type: 'color' | 'font' | 'spacing' | 'radius';
+  value: string;
+  category?: string;
 }
 
 export interface ElementInstance {
@@ -51,8 +69,14 @@ export interface ElementInstance {
   locked?: boolean;
   variant?: string;
   animations?: Animation[];
+  interactions?: Interaction[];
   isGlobal?: boolean;
   globalId?: string;
+  isMaster?: boolean;
+  isSlot?: boolean;
+  variants?: { id: string; name: string; styles: Styles }[];
+  activeVariantId?: string;
+  slots?: Record<string, ElementInstance[]>;
   props: {
     text?: string;
     src?: string;
@@ -62,6 +86,9 @@ export interface ElementInstance {
     [key: string]: any;
   };
   styles: Styles;
+  hoverStyles?: Styles;
+  activeStyles?: Styles;
+  focusStyles?: Styles;
   responsiveStyles?: {
     tablet?: Styles;
     mobile?: Styles;
@@ -97,16 +124,19 @@ interface BuilderState {
   deviceMode: DeviceMode;
   editorMode: EditorMode;
   isPreview: boolean;
-  leftPanelTab: 'components' | 'layers' | 'code';
-  rightPanelTab: 'style' | 'content' | 'layout' | 'animations';
+  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens';
+  rightPanelTab: 'style' | 'content' | 'layout' | 'animations' | 'interactions';
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
   history: Page[][];
   historyIndex: number;
   globalComponents: Record<string, ElementInstance>;
+  tokens: DesignToken[];
   presence: PresenceUser[];
   zoom: number;
   pan: { x: number; y: number };
+  playingAnimationId: string | null;
+  setPlayingAnimationId: (id: string | null) => void;
   
   // Actions
   setElements: (elements: ElementInstance[]) => void;
@@ -120,12 +150,19 @@ interface BuilderState {
   moveElementTo: (id: string, parentId: string | null, index: number) => void;
   setDeviceMode: (mode: DeviceMode) => void;
   setEditorMode: (mode: EditorMode) => void;
-  setLeftPanelTab: (tab: 'components' | 'layers' | 'code') => void;
-  setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations') => void;
+  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens') => void;
+  setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations' | 'interactions') => void;
   setLeftPanelCollapsed: (collapsed: boolean) => void;
   setRightPanelCollapsed: (collapsed: boolean) => void;
+  isolatedElementId: string | null;
+  setIsolatedElementId: (id: string | null) => void;
+  groupElements: (elementIds: string[]) => void;
   setZoom: (zoom: number) => void;
   setPan: (pan: { x: number; y: number }) => void;
+  showOutlines: boolean;
+  setShowOutlines: (show: boolean) => void;
+  showEmptySlots: boolean;
+  setShowEmptySlots: (show: boolean) => void;
   
   // Page Actions
   addPage: (name: string) => void;
@@ -137,6 +174,12 @@ interface BuilderState {
 
   // Global Components
   convertToGlobal: (id: string) => void;
+  updateGlobalComponent: (globalId: string, updates: Partial<ElementInstance>) => void;
+  
+  // Tokens
+  addToken: (token: DesignToken) => void;
+  updateToken: (id: string, updates: Partial<DesignToken>) => void;
+  removeToken: (id: string) => void;
   
   // Presence
   updatePresence: (user: Partial<PresenceUser>) => void;
@@ -170,9 +213,12 @@ export const useBuilderStore = create<BuilderState>()(
       history: [initialPages],
       historyIndex: 0,
       globalComponents: {},
+      tokens: [],
       presence: [],
       zoom: 1,
       pan: { x: 0, y: 0 },
+      playingAnimationId: null,
+      setPlayingAnimationId: (id) => set({ playingAnimationId: id }),
 
       setElements: (elements) => {
         const { pages, activePageId } = get();
@@ -417,10 +463,96 @@ export const useBuilderStore = create<BuilderState>()(
       setLeftPanelCollapsed: (collapsed) => set({ leftPanelCollapsed: collapsed }),
 
       setRightPanelCollapsed: (collapsed) => set({ rightPanelCollapsed: collapsed }),
+      isolatedElementId: null,
+      setIsolatedElementId: (id) => set({ isolatedElementId: id }),
+  groupElements: (elementIds) => {
+    const { elements, updateElement, removeElement } = get();
+    if (elementIds.length < 2) return;
+
+    // Find parent of the first element
+    const findParent = (items: ElementInstance[], id: string): ElementInstance | null => {
+      for (const item of items) {
+        if (item.children?.some(child => child.id === id)) return item;
+        if (item.children) {
+          const found = findParent(item.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const parent = findParent(elements, elementIds[0]);
+    const parentId = parent?.id;
+
+    // Create new group container
+    const newGroupId = uuidv4();
+    const groupContainer: ElementInstance = {
+      id: newGroupId,
+      type: 'container',
+      name: 'Group',
+      props: {},
+      styles: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        padding: '10px',
+      },
+      children: [],
+      parentId: parentId
+    };
+
+    // Get the elements to be grouped
+    const elementsToGroup: ElementInstance[] = [];
+    const getElements = (items: ElementInstance[]) => {
+      items.forEach(item => {
+        if (elementIds.includes(item.id)) {
+          elementsToGroup.push({ ...item, parentId: newGroupId });
+        }
+        if (item.children) getElements(item.children);
+      });
+    };
+    getElements(elements);
+
+    groupContainer.children = elementsToGroup;
+
+    // Remove old elements and add group container
+    // This is complex because we need to remove them from their parents
+    // Simplification: just add the group to the root if no parent
+    if (!parentId) {
+      set(state => ({
+        elements: [
+          ...state.elements.filter(el => !elementIds.includes(el.id)),
+          groupContainer
+        ]
+      }));
+    } else {
+      const updateChildren = (items: ElementInstance[]): ElementInstance[] => {
+        return items.map(item => {
+          if (item.id === parentId) {
+            return {
+              ...item,
+              children: [
+                ...(item.children || []).filter(child => !elementIds.includes(child.id)),
+                groupContainer
+              ]
+            };
+          }
+          if (item.children) {
+            return { ...item, children: updateChildren(item.children) };
+          }
+          return item;
+        });
+      };
+      set(state => ({ elements: updateChildren(state.elements) }));
+    }
+  },
 
       setZoom: (zoom) => set({ zoom }),
-      
       setPan: (pan) => set({ pan }),
+      showOutlines: false,
+      setShowOutlines: (show) => set({ showOutlines: show }),
+      showEmptySlots: true,
+      setShowEmptySlots: (show) => set({ showEmptySlots: show }),
 
       convertToGlobal: (id) => {
         const { elements, globalComponents } = get();
@@ -436,7 +568,11 @@ export const useBuilderStore = create<BuilderState>()(
         const element = findElement(elements);
         if (element) {
           const globalId = uuidv4();
-          const newGlobalComponents = { ...globalComponents, [globalId]: JSON.parse(JSON.stringify(element)) };
+          const master = JSON.parse(JSON.stringify(element)) as ElementInstance;
+          master.isMaster = true;
+          master.globalId = globalId;
+          
+          const newGlobalComponents = { ...globalComponents, [globalId]: master };
           
           const updateElements = (items: ElementInstance[]): ElementInstance[] => {
             return items.map(item => {
@@ -457,6 +593,58 @@ export const useBuilderStore = create<BuilderState>()(
           get().saveToHistory();
         }
       },
+
+      updateGlobalComponent: (globalId, updates) => {
+        const { globalComponents, pages } = get();
+        const master = globalComponents[globalId];
+        if (!master) return;
+
+        const newMaster = { ...master, ...updates };
+        const newGlobalComponents = { ...globalComponents, [globalId]: newMaster };
+
+        // Sync all instances across all pages
+        const syncInstances = (items: ElementInstance[]): ElementInstance[] => {
+          return items.map(item => {
+            if (item.isGlobal && item.globalId === globalId) {
+              // Apply master updates to instance
+              // For now, we sync styles and props that are in the updates
+              const syncedItem = { ...item };
+              if (updates.styles) syncedItem.styles = { ...item.styles, ...updates.styles };
+              if (updates.props) syncedItem.props = { ...item.props, ...updates.props };
+              if (updates.children) syncedItem.children = updates.children;
+              return syncedItem;
+            }
+            if (item.children) {
+              return { ...item, children: syncInstances(item.children) };
+            }
+            return item;
+          });
+        };
+
+        const newPages = pages.map(page => ({
+          ...page,
+          elements: syncInstances(page.elements)
+        }));
+
+        const activePage = newPages.find(p => p.id === get().activePageId);
+        
+        set({ 
+          globalComponents: newGlobalComponents, 
+          pages: newPages,
+          elements: activePage ? activePage.elements : get().elements
+        });
+        get().saveToHistory();
+      },
+
+      addToken: (token) => set(state => ({ tokens: [...state.tokens, token] })),
+      
+      updateToken: (id, updates) => set(state => ({
+        tokens: state.tokens.map(t => t.id === id ? { ...t, ...updates } : t)
+      })),
+      
+      removeToken: (id) => set(state => ({
+        tokens: state.tokens.filter(t => t.id !== id)
+      })),
 
       updatePresence: (userData) => {
         const { presence } = get();
@@ -524,6 +712,15 @@ export const useBuilderStore = create<BuilderState>()(
               const clone = JSON.parse(JSON.stringify(item));
               const regenerateIds = (el: ElementInstance) => {
                 el.id = uuidv4();
+                if (el.variants) {
+                  el.variants = el.variants.map(v => ({ ...v, id: uuidv4() }));
+                }
+                if (el.animations) {
+                  el.animations = el.animations.map(a => ({ ...a, id: uuidv4() }));
+                }
+                if (el.interactions) {
+                  el.interactions = el.interactions.map(i => ({ ...i, id: uuidv4() }));
+                }
                 if (el.children) el.children.forEach(regenerateIds);
               };
               regenerateIds(clone);
