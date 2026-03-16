@@ -60,13 +60,30 @@ export default function Editor() {
 
     if (isLibraryItem && type) {
       const definition = COMPONENT_REGISTRY[type];
-      const newElement: ElementInstance = {
-        id: uuidv4(),
-        type,
-        props: { ...definition.defaultProps },
-        styles: { ...definition.defaultStyles },
-        children: definition.isContainer ? [] : undefined,
+      
+      const createInstance = (def: any): ElementInstance => {
+        const instance: ElementInstance = {
+          id: uuidv4(),
+          type: def.type,
+          props: { ...def.props },
+          styles: { ...def.styles },
+          children: def.children || (COMPONENT_REGISTRY[def.type as ComponentType]?.isContainer ? [] : undefined),
+        };
+
+        if (def.children) {
+          instance.children = def.children.map((child: any) => createInstance(child));
+        } else if (COMPONENT_REGISTRY[def.type as ComponentType]?.defaultChildren) {
+          instance.children = COMPONENT_REGISTRY[def.type as ComponentType]!.defaultChildren!.map((child: any) => createInstance(child));
+        }
+
+        return instance;
       };
+
+      const newElement = createInstance({
+        type,
+        props: definition.defaultProps,
+        styles: definition.defaultStyles,
+      });
 
       if (overData?.isDropIndicator) {
         addElement(newElement, overData.parentId, overData.index);

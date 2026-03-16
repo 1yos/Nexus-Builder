@@ -11,145 +11,174 @@ export default function CodePanel() {
 
   const currentPage = pages.find(p => p.id === activePageId);
 
-  const generateHTML = (elements: any[]): string => {
-    return elements.map(el => {
-      const styles = Object.entries(el.styles || {})
-        .map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}`)
-        .join('; ');
-      
-      let tag = 'div';
-      const props: string[] = [];
-      
-      switch (el.type) {
-        case 'heading':
-          tag = `h${el.props.level || 1}`;
-          break;
-        case 'paragraph':
-          tag = 'p';
-          break;
-        case 'button':
-          tag = 'a';
-          props.push(`href="${el.props.href || '#'}"`);
-          break;
-        case 'image':
-          tag = 'img';
-          props.push(`src="${el.props.src || ''}"`);
-          props.push(`alt="${el.props.alt || ''}"`);
-          break;
-        case 'section':
-          tag = 'section';
-          break;
-        case 'navbar':
-          tag = 'nav';
-          break;
-        case 'footer':
-          tag = 'footer';
-          break;
-      }
-      
-      const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
-      let children = el.children ? generateHTML(el.children) : (el.props.text || '');
-      
-      if (el.type === 'navbar') {
-        const logo = el.props.logoType === 'image' 
-          ? `<img src="${el.props.logoSrc}" alt="Logo" style="height: 32px;" />`
-          : `<div style="font-weight: bold; font-size: 1.25rem;">${el.props.logoText || 'Nexus'}</div>`;
-        
-        const links = (el.props.links || []).map((link: any) => 
-          `<a href="${link.href}" style="margin-left: 1.5rem; text-decoration: none; color: inherit;">${link.label}</a>`
-        ).join('');
-        
-        children = `<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">${logo}<div style="display: flex;">${links}</div></div>`;
-      } else if (el.type === 'footer') {
-        children = `<div>${el.props.copyright || ''}</div>`;
-      }
-      
-      if (el.type === 'image') {
-        return `<${tag} style="${styles}"${propsString} />`;
-      }
-      
-      return `<${tag} style="${styles}"${propsString}>${children}</${tag}>`;
-    }).join('\n');
-  };
-
-  const generateReact = (elements: any[]): string => {
-    const renderElement = (el: any, indent = 2): string => {
-      const spaces = ' '.repeat(indent);
-      
-      let tag = el.type;
-      const props: string[] = [];
-      
-      switch (el.type) {
-        case 'heading':
-          tag = `h${el.props.level || 1}`;
-          break;
-        case 'paragraph':
-          tag = 'p';
-          break;
-        case 'button':
-          tag = 'a';
-          props.push(`href="${el.props.href || '#'}"`);
-          break;
-        case 'image':
-          tag = 'img';
-          props.push(`src="${el.props.src || ''}"`);
-          props.push(`alt="${el.props.alt || ''}"`);
-          break;
-        case 'section':
-          tag = 'section';
-          break;
-        case 'navbar':
-          tag = 'nav';
-          break;
-        case 'footer':
-          tag = 'footer';
-          break;
-      }
-
-      const otherProps = Object.entries(el.props || {})
-        .filter(([k]) => !['text', 'level', 'href', 'src', 'alt', 'links', 'logoText', 'logoSrc', 'logoType', 'copyright'].includes(k))
-        .map(([k, v]) => `${k}={${JSON.stringify(v)}}`)
-        .join(' ');
-      
-      if (otherProps) props.push(otherProps);
-      
-      const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
-      const styleObj = JSON.stringify(el.styles || {}, null, 2)
-        .replace(/"([^"]+)":/g, '$1:')
-        .split('\n')
-        .map((line, i) => i === 0 ? line : spaces + '    ' + line)
-        .join('\n');
-      
-      let children = el.children?.length 
-        ? `\n${el.children.map((c: any) => renderElement(c, indent + 2)).join('\n')}\n${spaces}`
-        : (el.props.text || '');
-
-      if (el.type === 'navbar') {
-        const logo = el.props.logoType === 'image' 
-          ? `<img src="${el.props.logoSrc}" alt="Logo" style={{ height: '32px' }} />`
-          : `<div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{${JSON.stringify(el.props.logoText || 'Nexus')}}</div>`;
-        
-        const links = (el.props.links || []).map((link: any) => 
-          `<a href="${link.href}" style={{ marginLeft: '1.5rem', textDecoration: 'none', color: 'inherit' }}>{${JSON.stringify(link.label)}}</a>`
-        ).join('\n' + spaces + '          ');
-        
-        children = `\n${spaces}  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>\n${spaces}    ${logo}\n${spaces}    <div style={{ display: 'flex' }}>\n${spaces}      ${links}\n${spaces}    </div>\n${spaces}  </div>\n${spaces}`;
-      } else if (el.type === 'footer') {
-        children = `\n${spaces}  <div>{${JSON.stringify(el.props.copyright || '')}}</div>\n${spaces}`;
-      }
-
-      if (el.type === 'image') {
-        return `${spaces}<${tag}${propsString} style={${styleObj}} />`;
-      }
-
-      return `${spaces}<${tag}${propsString} style={${styleObj}}>\n${spaces}  ${children}\n${spaces}</${tag}>`;
-    };
-
-    return `import React from 'react';\n\nexport default function GeneratedPage() {\n  return (\n    <div className="min-h-screen bg-white">\n${elements.map(el => renderElement(el, 6)).join('\n')}\n    </div>\n  );\n}`;
-  };
-
   const code = useMemo(() => {
     if (!currentPage) return '';
+
+    const generateHTML = (elements: any[]): string => {
+      return elements.map(el => {
+        const styles = Object.entries(el.styles || {})
+          .map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}`)
+          .join('; ');
+        
+        let tag = 'div';
+        const props: string[] = [];
+        
+        switch (el.type) {
+          case 'heading':
+            tag = `h${el.props.level || 1}`;
+            break;
+          case 'paragraph':
+            tag = 'p';
+            break;
+          case 'button':
+            tag = 'a';
+            props.push(`href="${el.props.href || '#'}"`);
+            break;
+          case 'image':
+            tag = 'img';
+            props.push(`src="${el.props.src || ''}"`);
+            props.push(`alt="${el.props.alt || ''}"`);
+            break;
+          case 'section':
+            tag = 'section';
+            break;
+          case 'navbar':
+            tag = 'nav';
+            break;
+          case 'footer':
+            tag = 'footer';
+            break;
+          case 'icon':
+            tag = 'span';
+            break;
+          case 'divider':
+            tag = 'hr';
+            break;
+          case 'spacer':
+            tag = 'div';
+            break;
+        }
+        
+        const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
+        let children = el.children ? generateHTML(el.children) : (el.props.text || '');
+        
+        if (el.type === 'navbar') {
+          const logo = el.props.logoType === 'image' 
+            ? `<img src="${el.props.logoSrc}" alt="Logo" style="height: 32px;" />`
+            : `<div style="font-weight: bold; font-size: 1.25rem;">${el.props.logoText || 'Nexus'}</div>`;
+          
+          const links = (el.props.links || []).map((link: any) => 
+            `<a href="${link.href}" style="margin-left: 1.5rem; text-decoration: none; color: inherit;">${link.label}</a>`
+          ).join('');
+          
+          children = `<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">${logo}<div style="display: flex;">${links}</div></div>`;
+        } else if (el.type === 'footer') {
+          children = `<div>${el.props.copyright || ''}</div>`;
+        } else if (el.type === 'icon') {
+          children = `[Icon: ${el.props.icon || 'Star'}]`;
+        } else if (el.type === 'divider' || el.type === 'spacer') {
+          children = '';
+        }
+        
+        if (el.type === 'image' || el.type === 'divider') {
+          return `<${tag} style="${styles}"${propsString} />`;
+        }
+        
+        return `<${tag} style="${styles}"${propsString}>${children}</${tag}>`;
+      }).join('\n');
+    };
+
+    const generateReact = (elements: any[]): string => {
+      const renderElement = (el: any, indent = 2): string => {
+        const spaces = ' '.repeat(indent);
+        
+        let tag = el.type;
+        const props: string[] = [];
+        
+        switch (el.type) {
+          case 'heading':
+            tag = `h${el.props.level || 1}`;
+            break;
+          case 'paragraph':
+            tag = 'p';
+            break;
+          case 'button':
+            tag = 'a';
+            props.push(`href="${el.props.href || '#'}"`);
+            break;
+          case 'image':
+            tag = 'img';
+            props.push(`src="${el.props.src || ''}"`);
+            props.push(`alt="${el.props.alt || ''}"`);
+            break;
+          case 'section':
+            tag = 'section';
+            break;
+          case 'navbar':
+            tag = 'nav';
+            break;
+          case 'footer':
+            tag = 'footer';
+            break;
+          case 'icon':
+            tag = 'div'; // We'll render an icon component
+            break;
+          case 'divider':
+            tag = 'div';
+            break;
+          case 'spacer':
+            tag = 'div';
+            break;
+        }
+
+        const otherProps = Object.entries(el.props || {})
+          .filter(([k]) => !['text', 'level', 'href', 'src', 'alt', 'links', 'logoText', 'logoSrc', 'logoType', 'copyright', 'icon'].includes(k))
+          .map(([k, v]) => `${k}={${JSON.stringify(v)}}`)
+          .join(' ');
+        
+        if (otherProps) props.push(otherProps);
+        
+        const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
+        const styleObj = JSON.stringify(el.styles || {}, null, 2)
+          .replace(/"([^"]+)":/g, '$1:')
+          .split('\n')
+          .map((line, i) => i === 0 ? line : spaces + '    ' + line)
+          .join('\n');
+        
+        let children = el.children?.length 
+          ? `\n${el.children.map((c: any) => renderElement(c, indent + 2)).join('\n')}\n${spaces}`
+          : (el.props.text || '');
+
+        if (el.type === 'navbar') {
+          const logo = el.props.logoType === 'image' 
+            ? `<img src="${el.props.logoSrc}" alt="Logo" style={{ height: '32px' }} />`
+            : `<div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{${JSON.stringify(el.props.logoText || 'Nexus')}}</div>`;
+          
+          const links = (el.props.links || []).map((link: any) => 
+            `<a href="${link.href}" style={{ marginLeft: '1.5rem', textDecoration: 'none', color: 'inherit' }}>{${JSON.stringify(link.label)}}</a>`
+          ).join('\n' + spaces + '          ');
+          
+          children = `\n${spaces}  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>\n${spaces}    ${logo}\n${spaces}    <div style={{ display: 'flex' }}>\n${spaces}      ${links}\n${spaces}    </div>\n${spaces}  </div>\n${spaces}`;
+        } else if (el.type === 'footer') {
+          children = `\n${spaces}  <div>{${JSON.stringify(el.props.copyright || '')}}</div>\n${spaces}`;
+        } else if (el.type === 'icon') {
+          children = `\n${spaces}  <Icon name="${el.props.icon || 'Star'}" size={${el.styles?.fontSize ? parseInt(el.styles.fontSize) * 16 : 32}} />\n${spaces}`;
+        } else if (el.type === 'divider') {
+          children = `\n${spaces}  <div style={{ width: '100%', height: '1px', backgroundColor: '${el.styles?.backgroundColor || '#e5e7eb'}' }} />\n${spaces}`;
+        } else if (el.type === 'spacer') {
+          children = '';
+        }
+
+        if (el.type === 'image') {
+          return `${spaces}<${tag}${propsString} style={${styleObj}} />`;
+        }
+
+        return `${spaces}<${tag}${propsString} style={${styleObj}}>\n${spaces}  ${children}\n${spaces}</${tag}>`;
+      };
+
+      return `import React from 'react';\n\nexport default function GeneratedPage() {\n  return (\n    <div className="min-h-screen bg-white">\n${elements.map(el => renderElement(el, 6)).join('\n')}\n    </div>\n  );\n}`;
+    };
+
     if (activeTab === 'json') return JSON.stringify(currentPage.elements, null, 2);
     if (activeTab === 'html') return generateHTML(currentPage.elements);
     return generateReact(currentPage.elements);

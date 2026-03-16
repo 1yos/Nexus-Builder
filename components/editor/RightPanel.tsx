@@ -31,7 +31,9 @@ import {
   ArrowLeft,
   ArrowRight,
   Maximize,
-  Minimize
+  Minimize,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export default function RightPanel() {
@@ -44,8 +46,51 @@ export default function RightPanel() {
     rightPanelTab, 
     setRightPanelTab,
     convertToGlobal,
-    duplicateElement
+    duplicateElement,
+    rightPanelCollapsed,
+    setRightPanelCollapsed,
+    deviceMode
   } = useBuilderStore();
+
+  if (rightPanelCollapsed) {
+    return (
+      <aside className="w-12 bg-zinc-900 border-l border-zinc-800 flex flex-col items-center py-4 h-full">
+        <button
+          onClick={() => setRightPanelCollapsed(false)}
+          className="p-2 hover:bg-zinc-800 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors"
+          title="Expand Sidebar"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="flex-1 flex flex-col gap-4 mt-8">
+          <button
+            onClick={() => { setRightPanelTab('style'); setRightPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'style' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <Palette className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setRightPanelTab('content'); setRightPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'content' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <Settings2 className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setRightPanelTab('layout'); setRightPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'layout' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <LayoutIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setRightPanelTab('animations'); setRightPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'animations' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <Activity className="w-5 h-5" />
+          </button>
+        </div>
+      </aside>
+    );
+  }
   
   const findElement = (items: any[], id: string): any => {
     for (const item of items) {
@@ -59,7 +104,6 @@ export default function RightPanel() {
   };
 
   const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
-  const { deviceMode } = useBuilderStore();
 
   const getCurrentStyles = () => {
     if (!selectedElement) return {};
@@ -80,7 +124,14 @@ export default function RightPanel() {
 
   if (!selectedElement) {
     return (
-      <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col items-center justify-center p-8 text-center">
+      <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col items-center justify-center p-8 text-center relative group/sidebar">
+        <button
+          onClick={() => setRightPanelCollapsed(true)}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-zinc-200 opacity-0 group-hover/sidebar:opacity-100 transition-opacity"
+          title="Collapse Sidebar"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
         <div className="w-16 h-16 bg-zinc-800/50 rounded-2xl flex items-center justify-center mb-6 border border-zinc-800">
           <MousePointer2 className="w-8 h-8 text-zinc-600" />
         </div>
@@ -121,7 +172,15 @@ export default function RightPanel() {
   const isLinkable = ['button', 'image', 'navbar'].includes(selectedElement.type);
 
   return (
-    <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col h-full overflow-hidden">
+    <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col h-full overflow-hidden relative group/sidebar">
+      <button
+        onClick={() => setRightPanelCollapsed(true)}
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-zinc-200 opacity-0 group-hover/sidebar:opacity-100 transition-opacity"
+        title="Collapse Sidebar"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+
       <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-blue-500/10 rounded-md border border-blue-500/20">

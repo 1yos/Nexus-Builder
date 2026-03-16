@@ -99,6 +99,8 @@ interface BuilderState {
   isPreview: boolean;
   leftPanelTab: 'components' | 'layers' | 'code';
   rightPanelTab: 'style' | 'content' | 'layout' | 'animations';
+  leftPanelCollapsed: boolean;
+  rightPanelCollapsed: boolean;
   history: Page[][];
   historyIndex: number;
   globalComponents: Record<string, ElementInstance>;
@@ -120,6 +122,8 @@ interface BuilderState {
   setEditorMode: (mode: EditorMode) => void;
   setLeftPanelTab: (tab: 'components' | 'layers' | 'code') => void;
   setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations') => void;
+  setLeftPanelCollapsed: (collapsed: boolean) => void;
+  setRightPanelCollapsed: (collapsed: boolean) => void;
   setZoom: (zoom: number) => void;
   setPan: (pan: { x: number; y: number }) => void;
   
@@ -161,6 +165,8 @@ export const useBuilderStore = create<BuilderState>()(
       isPreview: false,
       leftPanelTab: 'components',
       rightPanelTab: 'style',
+      leftPanelCollapsed: false,
+      rightPanelCollapsed: false,
       history: [initialPages],
       historyIndex: 0,
       globalComponents: {},
@@ -407,6 +413,10 @@ export const useBuilderStore = create<BuilderState>()(
       setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
       
       setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
+
+      setLeftPanelCollapsed: (collapsed) => set({ leftPanelCollapsed: collapsed }),
+
+      setRightPanelCollapsed: (collapsed) => set({ rightPanelCollapsed: collapsed }),
 
       setZoom: (zoom) => set({ zoom }),
       

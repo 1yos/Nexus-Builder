@@ -4,15 +4,57 @@ import React from 'react';
 import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine } from 'lucide-react';
+import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
 
 export default function LeftPanel() {
-  const { leftPanelTab, setLeftPanelTab } = useBuilderStore();
+  const { leftPanelTab, setLeftPanelTab, leftPanelCollapsed, setLeftPanelCollapsed } = useBuilderStore();
+
+  if (leftPanelCollapsed) {
+    return (
+      <aside className="w-12 bg-zinc-900 border-r border-zinc-800 flex flex-col items-center py-4 h-full">
+        <button
+          onClick={() => setLeftPanelCollapsed(false)}
+          className="p-2 hover:bg-zinc-800 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors"
+          title="Expand Sidebar"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+        <div className="flex-1 flex flex-col gap-4 mt-8">
+          <button
+            onClick={() => { setLeftPanelTab('components'); setLeftPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'components' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <Box className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setLeftPanelTab('layers'); setLeftPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'layers' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <Layers className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setLeftPanelTab('code'); setLeftPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'code' ? "text-emerald-500 bg-emerald-500/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <CodeIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </aside>
+    );
+  }
 
   return (
-    <aside className="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col h-full overflow-hidden">
+    <aside className="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col h-full overflow-hidden relative group/sidebar">
+      <button
+        onClick={() => setLeftPanelCollapsed(true)}
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-zinc-200 opacity-0 group-hover/sidebar:opacity-100 transition-opacity"
+        title="Collapse Sidebar"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+
       <div className="flex border-b border-zinc-800">
         <button
           onClick={() => setLeftPanelTab('components')}
@@ -260,7 +302,10 @@ function LayerItem({ element, depth }: { element: ElementInstance; depth: number
           )}
         </div>
 
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className={cn(
+          "items-center gap-0.5 ml-auto shrink-0",
+          isSelected ? "flex" : "hidden group-hover:flex"
+        )}>
           <button
             onClick={(e) => {
               e.stopPropagation();

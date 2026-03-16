@@ -6,7 +6,44 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
-import { Trash2, Copy, Move, Edit3, Lock, EyeOff, Menu, X, ChevronUp, ChevronDown, ArrowUpToLine, ArrowDownToLine } from 'lucide-react';
+import { 
+  Trash2, 
+  Copy, 
+  Move, 
+  Edit3, 
+  Lock, 
+  EyeOff, 
+  Menu, 
+  X, 
+  ChevronUp, 
+  ChevronDown, 
+  ArrowUpToLine, 
+  ArrowDownToLine,
+  Zap,
+  Shield,
+  Smartphone,
+  Star,
+  CheckCircle,
+  Clock,
+  Heart,
+  Globe,
+  Layout,
+  Type,
+  Image as ImageIcon,
+  MousePointer2,
+  Navigation,
+  LayoutTemplate,
+  CreditCard,
+  ListTodo,
+  Square,
+  Columns,
+  Rows,
+  Text as TextIcon
+} from 'lucide-react';
+
+const LUCIDE_ICONS: Record<string, any> = {
+  Zap, Shield, Smartphone, Star, CheckCircle, Clock, Heart, Globe, Layout, Type, ImageIcon, MousePointer2, Navigation, LayoutTemplate, CreditCard, ListTodo, Square, Columns, Rows, TextIcon
+};
 
 export default function Canvas() {
   const { 
@@ -573,6 +610,30 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
             {badge}
             {actionButtons}
             {renderChildren()}
+          </motion.div>
+        );
+      case 'icon':
+        const IconComp = LUCIDE_ICONS[element.props.icon || 'Star'] || Star;
+        return (
+          <motion.div {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            <IconComp size={style.fontSize ? parseInt(style.fontSize) * 16 : 32} color={style.color} />
+          </motion.div>
+        );
+      case 'divider':
+        return (
+          <motion.div {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            <div className="w-full h-px" style={{ backgroundColor: style.backgroundColor }} />
+          </motion.div>
+        );
+      case 'spacer':
+        return (
+          <motion.div {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
           </motion.div>
         );
       case 'navbar':
