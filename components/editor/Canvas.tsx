@@ -615,6 +615,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       const clickAnims = element.animations.filter(a => a.trigger === 'click' && !isPlaying(a.id));
 
       const processAnim = (anim: any) => {
+        const intensity = anim.intensity || 1;
         const transition = { 
           duration: anim.duration, 
           delay: isPlaying(anim.id) ? 0 : anim.delay, 
@@ -634,48 +635,48 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
             exit = { opacity: 0 };
             break;
           case 'slide-up':
-            initial = { opacity: 0, y: 40 };
+            initial = { opacity: 0, y: 40 * intensity };
             animate = { opacity: 1, y: 0 };
-            exit = { opacity: 0, y: -40 };
+            exit = { opacity: 0, y: -40 * intensity };
             break;
           case 'slide-down':
-            initial = { opacity: 0, y: -40 };
+            initial = { opacity: 0, y: -40 * intensity };
             animate = { opacity: 1, y: 0 };
-            exit = { opacity: 0, y: 40 };
+            exit = { opacity: 0, y: 40 * intensity };
             break;
           case 'slide-left':
-            initial = { opacity: 0, x: 40 };
+            initial = { opacity: 0, x: 40 * intensity };
             animate = { opacity: 1, x: 0 };
-            exit = { opacity: 0, x: -40 };
+            exit = { opacity: 0, x: -40 * intensity };
             break;
           case 'slide-right':
-            initial = { opacity: 0, x: -40 };
+            initial = { opacity: 0, x: -40 * intensity };
             animate = { opacity: 1, x: 0 };
-            exit = { opacity: 0, x: 40 };
+            exit = { opacity: 0, x: 40 * intensity };
             break;
           case 'scale':
-            initial = { opacity: 0, scale: 0.5 };
+            initial = { opacity: 0, scale: 0.5 / intensity };
             animate = { opacity: 1, scale: 1 };
-            exit = { opacity: 0, scale: 0.5 };
+            exit = { opacity: 0, scale: 0.5 / intensity };
             break;
           case 'rotate':
-            initial = { opacity: 0, rotate: -180 };
+            initial = { opacity: 0, rotate: -180 * intensity };
             animate = { opacity: 1, rotate: 0 };
-            exit = { opacity: 0, rotate: 180 };
+            exit = { opacity: 0, rotate: 180 * intensity };
             break;
           case 'bounce':
-            animate = { y: [0, -20, 0] };
+            animate = { y: [0, -20 * intensity, 0] };
             break;
           case 'flip':
-            initial = { rotateY: 180, opacity: 0 };
+            initial = { rotateY: 180 * intensity, opacity: 0 };
             animate = { rotateY: 0, opacity: 1 };
-            exit = { rotateY: -180, opacity: 0 };
+            exit = { rotateY: -180 * intensity, opacity: 0 };
             break;
           case 'pulse':
-            animate = { scale: [1, 1.05, 1] };
+            animate = { scale: [1, 1 + (0.05 * intensity), 1] };
             break;
           case 'float':
-            animate = { y: [0, -10, 0] };
+            animate = { y: [0, -10 * intensity, 0] };
             transition.repeat = Infinity;
             transition.repeatType = "mirror";
             break;

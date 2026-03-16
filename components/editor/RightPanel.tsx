@@ -1082,20 +1082,35 @@ export default function RightPanel() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Delay (s)</label>
+                          <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Intensity</label>
                           <input
                             type="number"
                             step="0.1"
-                            value={anim.delay}
+                            value={anim.intensity || 1}
                             onChange={(e) => {
                               const newAnims = selectedElement.animations.map((a: any) => 
-                                a.id === anim.id ? { ...a, delay: parseFloat(e.target.value) } : a
+                                a.id === anim.id ? { ...a, intensity: parseFloat(e.target.value) } : a
                               );
                               updateElement(selectedElement.id, { animations: newAnims });
                             }}
                             className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[10px] text-zinc-200"
                           />
                         </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Delay (s)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={anim.delay}
+                          onChange={(e) => {
+                            const newAnims = selectedElement.animations.map((a: any) => 
+                              a.id === anim.id ? { ...a, delay: parseFloat(e.target.value) } : a
+                            );
+                            updateElement(selectedElement.id, { animations: newAnims });
+                          }}
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[10px] text-zinc-200"
+                        />
                       </div>
                     </div>
                   ))}
