@@ -5,18 +5,21 @@ import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { GoogleGenAI } from "@google/genai";
 import { Sparkles, Loader2, Send, Wand2, History, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { cn } from '@/lib/utils';
 
 export default function AIPanel() {
   const [prompt, setPrompt] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const { addElement, isAiGenerating, setAiGenerating } = useBuilderStore();
   const [history, setHistory] = useState<{prompt: string, timestamp: number}[]>([]);
 
   const generateLayout = async () => {
     if (!prompt.trim() || isAiGenerating) return;
+    setError(null);
 
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
-      console.error('Gemini API key is missing. Please check your environment variables.');
+      setError('Gemini API key is missing. Please add it in the Settings menu (bottom left) as NEXT_PUBLIC_GEMINI_API_KEY.');
       return;
     }
 
@@ -47,11 +50,12 @@ export default function AIPanel() {
         }
       });
 
-      if (!response.text) {
+      const text = response.text;
+      if (!text) {
         throw new Error("AI failed to generate content");
       }
 
-      const result = JSON.parse(response.text);
+      const result = JSON.parse(text);
       
       // Recursively add IDs
       const prepareElement = (el: any): ElementInstance => {
@@ -67,8 +71,9 @@ export default function AIPanel() {
       
       setHistory([{ prompt, timestamp: Date.now() }, ...history.slice(0, 9)]);
       setPrompt('');
-    } catch (error) {
-      console.error('AI Generation failed:', error);
+    } catch (err: any) {
+      console.error('AI Generation failed:', err);
+      setError(err.message || 'Failed to generate layout. Please try again.');
     } finally {
       setAiGenerating(false);
     }
@@ -92,7 +97,10 @@ export default function AIPanel() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe the section you want to build... (e.g. 'A dark hero section for a crypto startup with a 3D image')"
-            className="w-full h-32 bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all resize-none"
+            className={cn(
+              "w-full h-32 bg-zinc-950 border rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none transition-all resize-none",
+              error ? "border-red-500/50 focus:ring-2 focus:ring-red-500/20" : "border-zinc-800 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50"
+            )}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), generateLayout())}
           />
           <button
@@ -103,6 +111,17 @@ export default function AIPanel() {
             {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
+
+        {error && (
+          <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2">
+            <div className="p-1 bg-red-500/20 rounded-md mt-0.5">
+              <Sparkles className="w-3 h-3 text-red-400 rotate-180" />
+            </div>
+            <p className="text-[10px] text-red-400 leading-relaxed font-medium">
+              {error}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
