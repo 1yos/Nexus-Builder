@@ -618,7 +618,14 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
           <motion.div {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
-            <IconComp size={style.fontSize ? parseInt(style.fontSize) * 16 : 32} color={style.color} />
+            <IconComp 
+              size={
+                style.fontSize 
+                  ? String(typeof style.fontSize === 'number' ? style.fontSize * 16 : parseInt(String(style.fontSize)) * 16) 
+                  : "32"
+              } 
+              color={style.color as string} 
+            />
           </motion.div>
         );
       case 'divider':
