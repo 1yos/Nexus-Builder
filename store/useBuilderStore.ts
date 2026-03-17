@@ -101,6 +101,14 @@ export interface Page {
   id: string;
   name: string;
   elements: ElementInstance[];
+  folderId?: string;
+  order: number;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  order: number;
 }
 
 export type DeviceMode = 'desktop' | 'tablet' | 'mobile';
@@ -115,8 +123,14 @@ export interface PresenceUser {
   lastActive: number;
 }
 
+export interface HistoryState {
+  pages: Page[];
+  folders: Folder[];
+}
+
 interface BuilderState {
   pages: Page[];
+  folders: Folder[];
   activePageId: string;
   elements: ElementInstance[]; // Convenience reference to active page elements
   selectedElementId: string | null;
@@ -128,7 +142,7 @@ interface BuilderState {
   rightPanelTab: 'style' | 'content' | 'layout' | 'animations' | 'interactions';
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
-  history: Page[][];
+  history: HistoryState[];
   historyIndex: number;
   globalComponents: Record<string, ElementInstance>;
   tokens: DesignToken[];
@@ -165,12 +179,21 @@ interface BuilderState {
   setShowEmptySlots: (show: boolean) => void;
   
   // Page Actions
-  addPage: (name: string) => void;
+  addPage: (name: string, folderId?: string) => void;
   removePage: (id: string) => void;
   setActivePage: (id: string) => void;
   renamePage: (id: string, name: string) => void;
   setPreview: (isPreview: boolean) => void;
   duplicateElement: (id: string) => void;
+
+  // Folder Actions
+  addFolder: (name: string) => void;
+  removeFolder: (id: string) => void;
+  renameFolder: (id: string, name: string) => void;
+  movePageToFolder: (pageId: string, folderId?: string) => void;
+  reorderPages: (activeId: string, overId: string) => void;
+  reorderFolders: (startIndex: number, endIndex: number) => void;
+  reorderItems: (activeId: string, overId: string) => void;
 
   // Global Components
   convertToGlobal: (id: string) => void;
@@ -192,13 +215,15 @@ interface BuilderState {
 
 const initialPageId = uuidv4();
 const initialPages: Page[] = [
-  { id: initialPageId, name: 'Home', elements: [] }
+  { id: initialPageId, name: 'Home', elements: [], order: 0 }
 ];
+const initialFolders: Folder[] = [];
 
 export const useBuilderStore = create<BuilderState>()(
   persist(
     (set, get) => ({
       pages: initialPages,
+      folders: initialFolders,
       activePageId: initialPageId,
       elements: [],
       selectedElementId: null,
@@ -210,7 +235,7 @@ export const useBuilderStore = create<BuilderState>()(
       rightPanelTab: 'style',
       leftPanelCollapsed: false,
       rightPanelCollapsed: false,
-      history: [initialPages],
+      history: [{ pages: initialPages, folders: initialFolders }],
       historyIndex: 0,
       globalComponents: {},
       tokens: [],
@@ -667,9 +692,10 @@ export const useBuilderStore = create<BuilderState>()(
         }
       },
 
-      addPage: (name) => {
+      addPage: (name, folderId) => {
         const { pages } = get();
-        const newPage: Page = { id: uuidv4(), name, elements: [] };
+        const maxOrder = pages.length > 0 ? Math.max(...pages.map(p => p.order)) : -1;
+        const newPage: Page = { id: uuidv4(), name, elements: [], folderId, order: maxOrder + 1 };
         const newPages = [...pages, newPage];
         set({ pages: newPages, activePageId: newPage.id, elements: [], selectedElementId: null });
         get().saveToHistory();
@@ -698,6 +724,131 @@ export const useBuilderStore = create<BuilderState>()(
         const newPages = pages.map(p => p.id === id ? { ...p, name } : p);
         set({ pages: newPages });
         get().saveToHistory();
+      },
+
+      addFolder: (name) => {
+        const { folders, pages } = get();
+        const maxOrderPages = pages.length > 0 ? Math.max(...pages.map(p => p.order)) : -1;
+        const maxOrderFolders = folders.length > 0 ? Math.max(...folders.map(f => f.order)) : -1;
+        const maxOrder = Math.max(maxOrderPages, maxOrderFolders);
+        
+        const newFolder: Folder = { id: uuidv4(), name, order: maxOrder + 1 };
+        set({ folders: [...folders, newFolder] });
+        get().saveToHistory();
+      },
+
+      removeFolder: (id) => {
+        const { folders, pages } = get();
+        set({ 
+          folders: folders.filter(f => f.id !== id),
+          pages: pages.map(p => p.folderId === id ? { ...p, folderId: undefined } : p)
+        });
+        get().saveToHistory();
+      },
+
+      renameFolder: (id, name) => {
+        const { folders } = get();
+        set({ folders: folders.map(f => f.id === id ? { ...f, name } : f) });
+        get().saveToHistory();
+      },
+
+      movePageToFolder: (pageId, folderId) => {
+        const { pages, folders } = get();
+        
+        let newOrder = 0;
+        if (folderId) {
+          const folderPages = pages.filter(p => p.folderId === folderId);
+          newOrder = folderPages.length > 0 ? Math.max(...folderPages.map(p => p.order)) + 1 : 0;
+        } else {
+          const topLevelItems = [
+            ...folders.map(f => ({ order: f.order })),
+            ...pages.filter(p => !p.folderId || !folders.find(f => f.id === p.folderId)).map(p => ({ order: p.order }))
+          ];
+          newOrder = topLevelItems.length > 0 ? Math.max(...topLevelItems.map(i => i.order)) + 1 : 0;
+        }
+
+        set({
+          pages: pages.map(p => p.id === pageId ? { ...p, folderId, order: newOrder } : p)
+        });
+        get().saveToHistory();
+      },
+
+      reorderPages: (activeId, overId) => {
+        const { pages } = get();
+        const activePage = pages.find(p => p.id === activeId);
+        const overPage = pages.find(p => p.id === overId);
+        
+        if (!activePage || !overPage || activePage.folderId !== overPage.folderId) return;
+
+        const folderId = activePage.folderId;
+        const folderPages = pages.filter(p => p.folderId === folderId).sort((a, b) => a.order - b.order);
+        
+        const oldIndex = folderPages.findIndex(p => p.id === activeId);
+        const newIndex = folderPages.findIndex(p => p.id === overId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const reorderedFolderPages = Array.from(folderPages);
+          const [removed] = reorderedFolderPages.splice(oldIndex, 1);
+          reorderedFolderPages.splice(newIndex, 0, removed);
+
+          const updatedPages = pages.map(p => {
+            if (p.folderId === folderId) {
+              const newOrder = reorderedFolderPages.findIndex(rp => rp.id === p.id);
+              return { ...p, order: newOrder };
+            }
+            return p;
+          });
+
+          set({ pages: updatedPages });
+          get().saveToHistory();
+        }
+      },
+
+      reorderFolders: (startIndex, endIndex) => {
+        const { folders } = get();
+        const newFolders = Array.from(folders);
+        const [removed] = newFolders.splice(startIndex, 1);
+        newFolders.splice(endIndex, 0, removed);
+        
+        // Update orders
+        const updatedFolders = newFolders.map((f, i) => ({ ...f, order: i }));
+        set({ folders: updatedFolders });
+        get().saveToHistory();
+      },
+
+      reorderItems: (activeId, overId) => {
+        const { pages, folders } = get();
+        
+        // This is a more complex reordering that handles intermingled pages and folders at the top level
+        const allItems = [
+          ...folders.map(f => ({ id: f.id, type: 'folder', order: f.order })),
+          ...pages.filter(p => !p.folderId || !folders.find(f => f.id === p.folderId)).map(p => ({ id: p.id, type: 'page', order: p.order }))
+        ].sort((a, b) => a.order - b.order);
+
+        const activeIndex = allItems.findIndex(item => item.id === activeId);
+        const overIndex = allItems.findIndex(item => item.id === overId);
+
+        if (activeIndex !== -1 && overIndex !== -1) {
+          const newItems = Array.from(allItems);
+          const [removed] = newItems.splice(activeIndex, 1);
+          newItems.splice(overIndex, 0, removed);
+
+          // Update orders in the store
+          const newPages = pages.map(p => {
+            const itemIndex = newItems.findIndex(item => item.id === p.id && item.type === 'page');
+            if (itemIndex !== -1) return { ...p, order: itemIndex };
+            return p;
+          });
+
+          const newFolders = folders.map(f => {
+            const itemIndex = newItems.findIndex(item => item.id === f.id && item.type === 'folder');
+            if (itemIndex !== -1) return { ...f, order: itemIndex };
+            return f;
+          });
+
+          set({ pages: newPages, folders: newFolders });
+          get().saveToHistory();
+        }
       },
 
       setPreview: (isPreview) => set({ isPreview, selectedElementId: null }),
@@ -748,9 +899,9 @@ export const useBuilderStore = create<BuilderState>()(
       },
 
       saveToHistory: () => {
-        const { pages, history, historyIndex } = get();
+        const { pages, folders, history, historyIndex } = get();
         const newHistory = history.slice(0, historyIndex + 1);
-        newHistory.push(JSON.parse(JSON.stringify(pages)));
+        newHistory.push(JSON.parse(JSON.stringify({ pages, folders })));
         set({
           history: newHistory,
           historyIndex: newHistory.length - 1,
@@ -760,10 +911,11 @@ export const useBuilderStore = create<BuilderState>()(
       undo: () => {
         const { history, historyIndex, activePageId } = get();
         if (historyIndex > 0) {
-          const prevPages = JSON.parse(JSON.stringify(history[historyIndex - 1])) as Page[];
-          const activePage = prevPages.find(p => p.id === activePageId) || prevPages[0];
+          const prevState = JSON.parse(JSON.stringify(history[historyIndex - 1])) as HistoryState;
+          const activePage = prevState.pages.find(p => p.id === activePageId) || prevState.pages[0];
           set({
-            pages: prevPages,
+            pages: prevState.pages,
+            folders: prevState.folders,
             activePageId: activePage.id,
             elements: activePage.elements,
             historyIndex: historyIndex - 1,
@@ -774,10 +926,11 @@ export const useBuilderStore = create<BuilderState>()(
       redo: () => {
         const { history, historyIndex, activePageId } = get();
         if (historyIndex < history.length - 1) {
-          const nextPages = JSON.parse(JSON.stringify(history[historyIndex + 1])) as Page[];
-          const activePage = nextPages.find(p => p.id === activePageId) || nextPages[0];
+          const nextState = JSON.parse(JSON.stringify(history[historyIndex + 1])) as HistoryState;
+          const activePage = nextState.pages.find(p => p.id === activePageId) || nextState.pages[0];
           set({
-            pages: nextPages,
+            pages: nextState.pages,
+            folders: nextState.folders,
             activePageId: activePage.id,
             elements: activePage.elements,
             historyIndex: historyIndex + 1,

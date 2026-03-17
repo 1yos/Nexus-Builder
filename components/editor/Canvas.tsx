@@ -66,7 +66,10 @@ export default function Canvas() {
     showOutlines,
     setShowOutlines,
     showEmptySlots,
-    setShowEmptySlots
+    setShowEmptySlots,
+    pages,
+    folders,
+    updateElement
   } = useBuilderStore();
 
   const elementsToRender = React.useMemo(() => {
@@ -172,7 +175,7 @@ export default function Canvas() {
       onMouseDown={handleMouseDown}
     >
       {!isPreview && (
-        <div className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 p-1 rounded-lg shadow-xl">
+        <div className="absolute top-4 left-4 z-40 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 p-1 rounded-lg shadow-xl">
           <button 
             onClick={() => setShowOutlines(!showOutlines)}
             className={cn(
@@ -354,6 +357,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     deviceMode,
     moveElement,
     elements,
+    folders,
     showOutlines,
     showEmptySlots,
     playingAnimationId,
@@ -362,6 +366,13 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
   
   const [isEditing, setIsEditing] = React.useState(false);
   const [textValue, setTextValue] = React.useState(element.props.text || '');
+  const [openDropdownId, setOpenDropdownId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = () => setOpenDropdownId(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
   
   const isSelected = selectedElementId === element.id;
   const isHovered = hoveredElementId === element.id;
@@ -895,9 +906,28 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
           </motion.div>
         );
       case 'navbar':
-        const navLinks = pages.map(p => ({ id: p.id, label: p.name, href: p.id, type: 'internal' }));
         const isMobile = deviceMode === 'mobile' || deviceMode === 'tablet';
         const showHamburger = isMobile && element.props.mobileMenuType === 'hamburger';
+
+        // Group pages by folder and sort by order
+        const groupedLinks = ([
+          ...folders.map(folder => ({
+            type: 'folder',
+            id: folder.id,
+            name: folder.name,
+            order: folder.order,
+            pages: pages.filter(p => p.folderId === folder.id).sort((a, b) => a.order - b.order)
+          })),
+          ...pages.filter(p => !p.folderId || !folders.find(f => f.id === p.folderId)).map(p => ({
+            type: 'page',
+            id: p.id,
+            name: p.name,
+            order: p.order,
+            href: p.id
+          }))
+        ] as any[])
+          .filter(item => item.type === 'page' || (item.type === 'folder' && item.pages.length > 0))
+          .sort((a, b) => a.order - b.order);
 
         return (
           <motion.nav key={animKey || element.id} {...commonProps} {...animProps} className={cn(commonProps.className, "relative")}>
@@ -936,16 +966,63 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                 </button>
               ) : (
                 <div className="flex gap-6">
-                  {navLinks.map((link: any) => (
-                    <a 
-                      key={link.id} 
-                      href={link.href}
-                      className="text-sm font-medium hover:text-blue-500 cursor-pointer"
-                      onClick={(e) => handleLinkClick(e, link.href, link.type)}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
+                  {groupedLinks.map((item: any) => {
+                    if (item.type === 'folder') {
+                      const isOpen = openDropdownId === item.id;
+                      return (
+                        <div key={item.id} className="relative">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDropdownId(isOpen ? null : item.id);
+                            }}
+                            className={cn(
+                              "flex items-center gap-1 text-sm font-medium hover:text-blue-500 cursor-pointer transition-colors",
+                              isOpen && "text-blue-500"
+                            )}
+                          >
+                            {item.name}
+                            <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", isOpen && "rotate-180")} />
+                          </button>
+                          <AnimatePresence>
+                            {isOpen && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                transition={{ duration: 0.15, ease: "easeOut" }}
+                                className="absolute top-full right-0 mt-2 w-56 bg-white/95 backdrop-blur-md border border-zinc-200 rounded-xl shadow-2xl z-[100] py-2 overflow-hidden"
+                              >
+                                {item.pages.map((page: any) => (
+                                  <a 
+                                    key={page.id} 
+                                    href={page.id}
+                                    className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                    onClick={(e) => {
+                                      handleLinkClick(e, page.id, 'internal');
+                                      setOpenDropdownId(null);
+                                    }}
+                                  >
+                                    {page.name}
+                                  </a>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    }
+                    return (
+                      <a 
+                        key={item.id} 
+                        href={item.href}
+                        className="text-sm font-medium hover:text-blue-500 cursor-pointer transition-colors"
+                        onClick={(e) => handleLinkClick(e, item.href, 'internal')}
+                      >
+                        {item.name}
+                      </a>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -963,19 +1040,43 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                     color: style.color 
                   }}
                 >
-                  {navLinks.map((link: any) => (
-                    <a 
-                      key={link.id} 
-                      href={link.href}
-                      className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-4 rounded-lg hover:bg-black/5 transition-colors"
-                      onClick={(e) => {
-                        handleLinkClick(e, link.href, link.type);
-                        updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
-                      }}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
+                  {groupedLinks.map((item: any) => {
+                    if (item.type === 'folder') {
+                      return (
+                        <div key={item.id} className="flex flex-col gap-1">
+                          <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-4 py-2">
+                            {item.name}
+                          </div>
+                          {item.pages.map((page: any) => (
+                            <a 
+                              key={page.id} 
+                              href={page.id}
+                              className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-8 rounded-lg hover:bg-black/5 transition-colors"
+                              onClick={(e) => {
+                                handleLinkClick(e, page.id, 'internal');
+                                updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
+                              }}
+                            >
+                              {page.name}
+                            </a>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return (
+                      <a 
+                        key={item.id} 
+                        href={item.href}
+                        className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-4 rounded-lg hover:bg-black/5 transition-colors"
+                        onClick={(e) => {
+                          handleLinkClick(e, item.href, 'internal');
+                          updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
+                        }}
+                      >
+                        {item.name}
+                      </a>
+                    );
+                  })}
                 </motion.div>
               )}
             </AnimatePresence>
