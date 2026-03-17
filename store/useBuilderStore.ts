@@ -185,6 +185,7 @@ interface BuilderState {
   renamePage: (id: string, name: string) => void;
   setPreview: (isPreview: boolean) => void;
   duplicateElement: (id: string) => void;
+  loadTemplate: (elements: ElementInstance[]) => void;
 
   // Folder Actions
   addFolder: (name: string) => void;
@@ -896,6 +897,13 @@ export const useBuilderStore = create<BuilderState>()(
           set({ elements: newItems, pages: newPages, selectedElementId: duplicated.id });
           get().saveToHistory();
         }
+      },
+
+      loadTemplate: (templateElements) => {
+        const { activePageId, pages } = get();
+        const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: templateElements } : p);
+        set({ elements: templateElements, pages: newPages, selectedElementId: null });
+        get().saveToHistory();
       },
 
       saveToHistory: () => {

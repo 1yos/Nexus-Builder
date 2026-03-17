@@ -20,15 +20,24 @@ import Toolbar from './Toolbar';
 import Canvas from './Canvas';
 import { LucideIcon } from 'lucide-react';
 
+import { useSearchParams } from 'next/navigation';
+import { TEMPLATE_DATA } from '@/lib/template-data';
+
 export default function Editor() {
-  const { addElement, elements, selectElement, isPreview } = useBuilderStore();
+  const { addElement, elements, selectElement, isPreview, loadTemplate } = useBuilderStore();
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get('template');
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [activeType, setActiveType] = React.useState<ComponentType | null>(null);
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    if (templateId && TEMPLATE_DATA[templateId]) {
+      loadTemplate(TEMPLATE_DATA[templateId]);
+    }
+  }, [templateId, loadTemplate]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
