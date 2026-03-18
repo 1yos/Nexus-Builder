@@ -6,12 +6,8 @@ export const STARTUP_TEMPLATE: ElementInstance[] = [
     id: uuidv4(),
     type: 'navbar',
     props: {
-      logo: 'Nexus',
-      links: [
-        { label: 'Features', href: '#features' },
-        { label: 'Pricing', href: '#pricing' },
-        { label: 'About', href: '#about' }
-      ]
+      logoText: 'Nexus',
+      links: []
     },
     styles: {
       backgroundColor: '#ffffff',

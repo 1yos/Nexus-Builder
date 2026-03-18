@@ -16,7 +16,10 @@ import {
 
 import PageSelector from './PageSelector';
 
+import { useRouter } from 'next/navigation';
+
 export default function Toolbar() {
+  const router = useRouter();
   const { 
     undo, 
     redo, 
@@ -126,7 +129,10 @@ export default function Toolbar() {
           <span>{isPreview ? 'Back to Editor' : 'Preview'}</span>
         </button>
         {!isPreview && (
-          <button className="flex items-center gap-2 px-4 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-md transition-all shadow-lg shadow-blue-600/20">
+          <button 
+            onClick={() => router.push('/publish')}
+            className="flex items-center gap-2 px-4 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-md transition-all shadow-lg shadow-blue-600/20"
+          >
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>

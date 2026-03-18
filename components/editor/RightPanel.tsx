@@ -472,6 +472,92 @@ export default function RightPanel() {
                     </div>
                   )}
 
+                  <div className="pt-4 border-t border-zinc-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Navbar Links</label>
+                      <button
+                        onClick={() => {
+                          const newLink = { id: uuidv4(), label: 'New Link', href: '/', type: 'internal' };
+                          handlePropChange('links', [...(selectedElement.props.links || []), newLink]);
+                        }}
+                        className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-zinc-500 italic">If empty, all pages will be shown automatically.</p>
+                    <div className="space-y-2">
+                      {(selectedElement.props.links || []).map((link: any, index: number) => (
+                        <div key={link.id || `link-${index}`} className="p-2 bg-zinc-800 rounded-lg border border-zinc-700 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={link.label}
+                              onChange={(e) => {
+                                const newLinks = [...selectedElement.props.links];
+                                newLinks[index] = { ...link, label: e.target.value };
+                                handlePropChange('links', newLinks);
+                              }}
+                              className="flex-1 bg-transparent text-[10px] text-zinc-200 focus:outline-none"
+                              placeholder="Link Label"
+                            />
+                            <button
+                              onClick={() => {
+                                const newLinks = selectedElement.props.links.filter((l: any) => l.id !== link.id);
+                                handlePropChange('links', newLinks);
+                              }}
+                              className="p-1 text-zinc-600 hover:text-red-400"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <select
+                              value={link.type || 'internal'}
+                              onChange={(e) => {
+                                const newLinks = [...selectedElement.props.links];
+                                newLinks[index] = { ...link, type: e.target.value };
+                                handlePropChange('links', newLinks);
+                              }}
+                              className="bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-[9px] text-zinc-400"
+                            >
+                              <option value="internal">Page</option>
+                              <option value="external">URL</option>
+                            </select>
+                            {link.type === 'internal' ? (
+                              <select
+                                value={link.href}
+                                onChange={(e) => {
+                                  const newLinks = [...selectedElement.props.links];
+                                  newLinks[index] = { ...link, href: e.target.value };
+                                  handlePropChange('links', newLinks);
+                                }}
+                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-[9px] text-zinc-200"
+                              >
+                                <option value="/">Home</option>
+                                {pages.map(p => (
+                                  <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={link.href}
+                                onChange={(e) => {
+                                  const newLinks = [...selectedElement.props.links];
+                                  newLinks[index] = { ...link, href: e.target.value };
+                                  handlePropChange('links', newLinks);
+                                }}
+                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-[9px] text-zinc-200"
+                                placeholder="https://..."
+                              />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="pt-4 border-t border-zinc-800">
                     <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider block mb-2">Mobile Menu</label>
                     <div className="grid grid-cols-2 gap-3">

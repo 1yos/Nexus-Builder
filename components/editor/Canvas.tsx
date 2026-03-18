@@ -272,7 +272,7 @@ export default function Canvas() {
 
           <AnimatePresence>
             {isolatedElementId && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-lg">
+              <div key="isolation-badge" className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-lg">
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 Isolation Mode
                 <button 
@@ -284,7 +284,7 @@ export default function Canvas() {
               </div>
             )}
             {elementsToRender.length === 0 ? (
-              <div className="h-[70vh] flex flex-col items-center justify-center text-zinc-300 p-12 text-center">
+              <div key="empty-canvas" className="h-[70vh] flex flex-col items-center justify-center text-zinc-300 p-12 text-center">
                 <div className="w-20 h-20 border-2 border-dashed border-zinc-200 rounded-2xl mb-6 flex items-center justify-center bg-zinc-50">
                   <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
                     <div className="w-4 h-4 bg-purple-500 rounded-sm rotate-45" />
@@ -296,15 +296,15 @@ export default function Canvas() {
                 </p>
               </div>
             ) : (
-              <>
-                <DropIndicator index={0} />
+              <React.Fragment key="canvas-content">
+                <DropIndicator key="drop-indicator-root-0" index={0} />
                 {elementsToRender.map((element, idx) => (
                   <React.Fragment key={element.id}>
                     <RenderElement element={element} index={idx} />
                     <DropIndicator index={idx + 1} />
                   </React.Fragment>
                 ))}
-              </>
+              </React.Fragment>
             )}
           </AnimatePresence>
         </motion.div>
@@ -601,15 +601,15 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     if (isEmpty) return null;
 
     return (
-      <>
-        <DropIndicator parentId={element.id} index={0} />
+      <React.Fragment key="children-list">
+        <DropIndicator key={`drop-indicator-${element.id}-0`} parentId={element.id} index={0} />
         {element.children!.map((child, idx) => (
           <React.Fragment key={child.id}>
             <RenderElement element={child} index={idx} parentId={element.id} />
-            <DropIndicator parentId={element.id} index={idx + 1} />
+            <DropIndicator key={`drop-indicator-${element.id}-${idx + 1}`} parentId={element.id} index={idx + 1} />
           </React.Fragment>
         ))}
-      </>
+      </React.Fragment>
     );
   };
 
@@ -910,7 +910,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         const showHamburger = isMobile && element.props.mobileMenuType === 'hamburger';
 
         // Group pages by folder and sort by order
-        const groupedLinks = ([
+        const dynamicLinks = ([
           ...folders.map(folder => ({
             type: 'folder',
             id: folder.id,
@@ -928,6 +928,10 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         ] as any[])
           .filter(item => item.type === 'page' || (item.type === 'folder' && item.pages.length > 0))
           .sort((a, b) => a.order - b.order);
+
+        const groupedLinks = (element.props.links && element.props.links.length > 0)
+          ? element.props.links.map((l: any, idx: number) => ({ ...l, type: 'page', name: l.label, id: l.id || `custom-${idx}` })) // Treat custom links as pages for simple rendering
+          : dynamicLinks;
 
         return (
           <motion.nav key={animKey || element.id} {...commonProps} {...animProps} className={cn(commonProps.className, "relative")}>
@@ -966,11 +970,12 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                 </button>
               ) : (
                 <div className="flex gap-6">
-                  {groupedLinks.map((item: any) => {
+                  {groupedLinks.map((item: any, idx: number) => {
                     if (item.type === 'folder') {
                       const isOpen = openDropdownId === item.id;
+                      const itemId = item.id || `folder-${idx}`;
                       return (
-                        <div key={item.id} className="relative">
+                        <div key={`nav-item-${itemId}`} className="relative">
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
@@ -993,9 +998,9 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                                 transition={{ duration: 0.15, ease: "easeOut" }}
                                 className="absolute top-full right-0 mt-2 w-56 bg-white/95 backdrop-blur-md border border-zinc-200 rounded-xl shadow-2xl z-[100] py-2 overflow-hidden"
                               >
-                                {item.pages.map((page: any) => (
+                                {item.pages.map((page: any, pIdx: number) => (
                                   <a 
-                                    key={page.id} 
+                                    key={page.id || `page-${pIdx}`} 
                                     href={page.id}
                                     className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                     onClick={(e) => {
@@ -1012,9 +1017,10 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                         </div>
                       );
                     }
+                    const itemId = item.id || `page-${idx}`;
                     return (
                       <a 
-                        key={item.id} 
+                        key={`nav-item-${itemId}`} 
                         href={item.href}
                         className="text-sm font-medium hover:text-blue-500 cursor-pointer transition-colors"
                         onClick={(e) => handleLinkClick(e, item.href, 'internal')}
@@ -1040,32 +1046,36 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                     color: style.color 
                   }}
                 >
-                  {groupedLinks.map((item: any) => {
+                  {groupedLinks.map((item: any, idx: number) => {
                     if (item.type === 'folder') {
+                      const itemId = item.id || `folder-${idx}`;
                       return (
-                        <div key={item.id} className="flex flex-col gap-1">
-                          <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-4 py-2">
+                        <div key={`nav-mobile-folder-${itemId}`} className="flex flex-col gap-1">
+                          <div key="folder-title" className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-4 py-2">
                             {item.name}
                           </div>
-                          {item.pages.map((page: any) => (
-                            <a 
-                              key={page.id} 
-                              href={page.id}
-                              className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-8 rounded-lg hover:bg-black/5 transition-colors"
-                              onClick={(e) => {
-                                handleLinkClick(e, page.id, 'internal');
-                                updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
-                              }}
-                            >
-                              {page.name}
-                            </a>
-                          ))}
+                          <div key="folder-pages" className="flex flex-col gap-1">
+                            {item.pages.map((page: any, pIdx: number) => (
+                              <a 
+                                key={page.id || `mobile-page-${pIdx}`} 
+                                href={page.id}
+                                className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-8 rounded-lg hover:bg-black/5 transition-colors"
+                                onClick={(e) => {
+                                  handleLinkClick(e, page.id, 'internal');
+                                  updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
+                                }}
+                              >
+                                {page.name}
+                              </a>
+                            ))}
+                          </div>
                         </div>
                       );
                     }
+                    const itemId = item.id || `page-${idx}`;
                     return (
                       <a 
-                        key={item.id} 
+                        key={`nav-mobile-item-${itemId}`} 
                         href={item.href}
                         className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-4 rounded-lg hover:bg-black/5 transition-colors"
                         onClick={(e) => {

@@ -5,10 +5,28 @@ import { Globe, Download, Link as LinkIcon, Check, ArrowRight, Zap, Shield, Serv
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
+import { useBuilderStore } from '@/store/useBuilderStore';
+import { generateSiteCode } from '@/lib/codegen';
+import JSZip from 'jszip';
 
 export default function PublishPage() {
+  const { pages, folders } = useBuilderStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'html' | 'react'>('html');
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadName, setDownloadName] = useState<string>('');
+  const [isInIframe, setIsInIframe] = useState(false);
+
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  // Check if running in an iframe
+  useState(() => {
+    if (typeof window !== 'undefined') {
+      setIsInIframe(window.self !== window.top);
+    }
+  });
 
   const handlePublish = () => {
     setIsPublishing(true);
@@ -16,6 +34,47 @@ export default function PublishPage() {
       setIsPublishing(false);
       setIsPublished(true);
     }, 2000);
+  };
+
+  const handleExport = async () => {
+    if (pages.length === 0) {
+      setExportError('No pages to export. Please build something first!');
+      return;
+    }
+
+    setIsExporting(true);
+    setDownloadUrl(null);
+    setExportError(null);
+    try {
+      const zip = new JSZip();
+      const siteCode = generateSiteCode(pages, folders, exportFormat);
+
+      Object.entries(siteCode).forEach(([filename, content]) => {
+        zip.file(filename, content);
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      
+      const url = URL.createObjectURL(blob);
+      const filename = `nexus-site-${exportFormat}-export.zip`;
+      
+      setDownloadUrl(url);
+      setDownloadName(filename);
+      
+      // Attempt auto-download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      setExportError('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -93,9 +152,62 @@ export default function PublishPage() {
                 </div>
               </div>
 
-              <button className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2">
-                <Download className="w-5 h-5" /> Download ZIP
+              <div className="mb-6">
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 block">Export Format</label>
+                <div className="grid grid-cols-2 gap-2 bg-zinc-100 p-1 rounded-xl">
+                  <button 
+                    onClick={() => setExportFormat('html')}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${exportFormat === 'html' ? 'bg-white shadow-sm text-blue-600' : 'text-zinc-500 hover:text-zinc-900'}`}
+                  >
+                    HTML/CSS
+                  </button>
+                  <button 
+                    onClick={() => setExportFormat('react')}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${exportFormat === 'react' ? 'bg-white shadow-sm text-blue-600' : 'text-zinc-500 hover:text-zinc-900'}`}
+                  >
+                    React (TSX)
+                  </button>
+                </div>
+              </div>
+
+              {isInIframe && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-xs text-yellow-800">
+                  <p className="font-bold mb-1">Preview Environment Notice</p>
+                  <p>Downloads may be blocked in this preview. If the download doesn&apos;t start automatically, use the link below or open the app in a new tab.</p>
+                </div>
+              )}
+
+              {exportError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800">
+                  <p className="font-bold mb-1">Error</p>
+                  <p>{exportError}</p>
+                </div>
+              )}
+
+              <button 
+                onClick={handleExport}
+                disabled={isExporting}
+                className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-4"
+              >
+                {isExporting ? 'Preparing Export...' : <><Download className="w-5 h-5" /> Generate ZIP</>}
               </button>
+
+              {downloadUrl && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-green-50 border border-green-200 rounded-xl flex flex-col items-center justify-center text-center gap-3"
+                >
+                  <div className="text-sm font-bold text-green-800">Export Ready!</div>
+                  <a 
+                    href={downloadUrl} 
+                    download={downloadName}
+                    className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-all shadow-sm"
+                  >
+                    Click Here to Download
+                  </a>
+                </motion.div>
+              )}
             </motion.div>
 
             {/* Custom Domain */}

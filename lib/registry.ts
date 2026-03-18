@@ -201,11 +201,7 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       logoType: 'text',
       logoText: 'Nexus', 
       logoSrc: '',
-      links: [
-        { id: '1', label: 'Home', href: '/', type: 'internal' },
-        { id: '2', label: 'About', href: '/about', type: 'internal' },
-        { id: '3', label: 'Contact', href: '/contact', type: 'internal' }
-      ],
+      links: [],
       mobileMenuType: 'hamburger',
       hamburgerColor: '#111827',
       hamburgerSize: '24px',
