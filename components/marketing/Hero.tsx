@@ -136,9 +136,9 @@ export default function Hero() {
           {/* Headline */}
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-text-primary mb-8 tracking-tighter leading-[0.9] uppercase">
             The Nexus of <br />
-            <span className="text-transparent bg-clip-text bg-accent-gradient drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            
               Creation
-            </span>
+            
           </h1>
 
           <motion.p 
