@@ -80,7 +80,7 @@ export default function PricingPreview() {
           </motion.div>
           <h2 className="text-3xl md:text-5xl font-black text-text-primary mb-8 tracking-tighter uppercase">
             Select your <br />
-            <span className="text-transparent bg-clip-text bg-accent-gradient drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">Access Level.</span>
+            Access Level.
           </h2>
           
           {/* Toggle */}
