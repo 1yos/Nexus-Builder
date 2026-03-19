@@ -49,7 +49,7 @@ function PageTransition({ children }: { children: React.ReactNode }) {
   if (isBuilder) return <>{children}</>;
 
   return (
-    <AnimatePresence mode="wait">
+    <>
       <motion.div
         key={pathname}
         initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
@@ -60,7 +60,7 @@ function PageTransition({ children }: { children: React.ReactNode }) {
       >
         {children}
       </motion.div>
-    </AnimatePresence>
+    </>
   );
 }
 

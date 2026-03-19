@@ -35,9 +35,9 @@ export default function DashboardSidebar() {
           >
             <Hexagon className="w-6 h-6 text-white fill-current" />
           </motion.div>
-          <span className="text-2xl font-black tracking-widest text-text-primary uppercase">
-            ETHEREAL
-          </span>
+          <div className="text-2xl font-black tracking-widest text-text-primary uppercase">
+            NEXUS
+          </div>
         </Link>
       </div>
 

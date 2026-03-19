@@ -38,7 +38,7 @@ export default function DashboardPage() {
             className="text-4xl md:text-6xl font-black text-text-primary tracking-tighter leading-[1] uppercase"
           >
             Welcome back,<br />
-            <span className="text-gradient drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">OPERATOR_01</span>
+            OPERATOR_01
           </motion.h1>
         </div>
 

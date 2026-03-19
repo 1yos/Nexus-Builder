@@ -41,9 +41,9 @@ export default function MarketingNavbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <NexusLogo className={isScrolled ? "w-8 h-8" : "w-10 h-10"} />
-            <span className={`font-black tracking-[0.3em] uppercase text-text-primary transition-all duration-300 ${isScrolled ? "text-lg" : "text-xl"}`}>
+            <div className={`font-black tracking-[0.3em] uppercase text-text-primary transition-all duration-300 ${isScrolled ? "text-lg" : "text-xl"}`}>
               NEXUS
-            </span>
+            </div>
           </Link>
 
           {/* Desktop Nav */}
@@ -57,7 +57,7 @@ export default function MarketingNavbar() {
                 }`}
               >
                 {link.name}
-                <motion.span 
+                <motion.div 
                   className={`absolute -bottom-1 left-0 h-px bg-accent-primary transition-all ${
                     pathname === link.href ? 'w-full' : 'w-0 group-hover:w-full'
                   }`}
@@ -74,7 +74,7 @@ export default function MarketingNavbar() {
                 className="relative overflow-hidden bg-surface border border-border text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg hover:shadow-accent-primary/20 transition-all group"
               >
                 <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity" />
-                <span className="relative z-10">Initiate</span>
+                <div className="relative z-10">Initiate</div>
               </Link>
             </motion.div>
           </div>

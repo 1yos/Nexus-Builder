@@ -111,7 +111,8 @@ export default function TemplatesShowcase() {
             </motion.div>
             <h2 className="text-3xl md:text-5xl font-black text-text-primary mb-6 tracking-tighter uppercase">
               Initialize with a <br /> 
-             Construct.            </h2>
+              Construct.
+            </h2>
           </div>
           
           <Link 

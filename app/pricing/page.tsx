@@ -153,7 +153,7 @@ export default function PricingPage() {
               </motion.div>
               
               <h2 className="text-4xl md:text-7xl font-black text-text-primary mb-8 tracking-tighter leading-[0.9] uppercase">
-                READY TO CONSTRUCT <br /> YOUR REALITY?
+                READY TO CONSTRUCT <br /> <span className="text-gradient drop-shadow-[0_0_30px_rgba(59,130,246,0.4)]">YOUR REALITY?</span>
               </h2>
               <p className="text-text-secondary text-xl mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
                 Join the network of architects constructing digital entities with NEXUS. 

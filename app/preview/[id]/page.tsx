@@ -92,7 +92,7 @@ export default function TemplatePreviewPage() {
                 />
               )}
               <device.icon className="w-4 h-4 relative z-10" />
-              <span className="text-[10px] font-black uppercase tracking-widest relative z-10">{device.label}</span>
+              <div className="text-[10px] font-black uppercase tracking-widest relative z-10">{device.label}</div>
             </motion.button>
           ))}
         </div>

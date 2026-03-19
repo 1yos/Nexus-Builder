@@ -17,7 +17,7 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="flex items-center gap-3 mb-6 group">
               <NexusLogo className="w-8 h-8" />
-              <span className="text-xl font-black text-text-primary tracking-tighter uppercase group-hover:text-accent-highlight transition-colors">Nexus</span>
+              <div className="text-xl font-black text-text-primary tracking-tighter uppercase group-hover:text-accent-highlight transition-colors">Nexus</div>
             </Link>
             <p className="text-text-secondary text-xs leading-relaxed max-w-xs uppercase tracking-wider font-medium opacity-60">
               The next-generation neural synthesis platform for digital architects and creative networks.

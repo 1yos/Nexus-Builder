@@ -41,7 +41,7 @@ export default function SignupPage() {
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex flex-col items-center gap-4 mb-8 group">
             <NexusLogo className="w-16 h-16" />
-            <span className="font-black text-4xl tracking-[0.4em] text-text-primary uppercase drop-shadow-[0_0_20px_rgba(59,130,246,0.4)]">NEXUS</span>
+            <div className="font-black text-4xl tracking-[0.4em] text-text-primary uppercase drop-shadow-[0_0_20px_rgba(59,130,246,0.4)]">NEXUS</div>
           </Link>
           <h1 className="text-3xl font-black text-text-primary tracking-tighter uppercase mb-2">INITIALIZE IDENTITY</h1>
           <p className="text-[10px] font-mono font-black text-text-secondary uppercase tracking-[0.3em] opacity-60">Construct your digital presence in the network</p>
@@ -109,9 +109,9 @@ export default function SignupPage() {
               className="w-full relative group/btn overflow-hidden bg-white text-black py-5 rounded-2xl font-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 uppercase tracking-[0.2em] text-xs shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-accent-primary/20"
             >
               <div className="absolute inset-0 bg-accent-gradient opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500" />
-              <span className="relative z-10 group-hover/btn:text-white transition-colors">
+              <div className="relative z-10 group-hover/btn:text-white transition-colors">
                 {isLoading ? 'ESTABLISHING LINK...' : 'INITIALIZE'}
-              </span>
+              </div>
               <ArrowRight className="w-5 h-5 relative z-10 group-hover/btn:text-white transition-colors group-hover/btn:translate-x-1 transition-transform" />
             </motion.button>
           </form>

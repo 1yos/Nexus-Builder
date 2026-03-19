@@ -111,8 +111,8 @@ export default function PublishPage() {
               
               <div className="bg-background p-4 rounded-xl mb-8 border border-border">
                 <div className="flex items-center gap-2 text-sm font-black text-text-secondary uppercase tracking-widest">
-                  <span className="text-text-secondary/70">VECTOR:</span>
-                  <span className="text-[var(--accent-primary)]">alpha-construct.ethereal.network</span>
+                  <div className="text-text-secondary/70">VECTOR:</div>
+                  <div className="text-[var(--accent-primary)]">alpha-construct.ethereal.network</div>
                 </div>
               </div>
 
