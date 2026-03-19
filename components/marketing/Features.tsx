@@ -100,7 +100,7 @@ export default function Features() {
           
           <h2 className="text-3xl md:text-5xl font-black text-text-primary mb-6 tracking-tighter uppercase">
             Design Without <br /> 
-            <span className="text-transparent bg-clip-text bg-accent-gradient drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">Limits.</span>
+            Limits.
           </h2>
         </div>
 
