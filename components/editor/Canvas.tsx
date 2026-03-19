@@ -20,7 +20,7 @@ import {
   ChevronDown, 
   ArrowUpToLine, 
   ArrowDownToLine,
-  Zap,
+  Activity,
   Shield,
   Smartphone,
   Star,
@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 
 const LUCIDE_ICONS: Record<string, any> = {
-  Zap, Shield, Smartphone, Star, CheckCircle, Clock, Heart, Globe, Layout, Type, ImageIcon, MousePointer2, Navigation, LayoutTemplate, CreditCard, ListTodo, Square, Columns, Rows, TextIcon
+  Activity, Shield, Smartphone, Star, CheckCircle, Clock, Heart, Globe, Layout, Type, ImageIcon, MousePointer2, Navigation, LayoutTemplate, CreditCard, ListTodo, Square, Columns, Rows, TextIcon
 };
 
 export default function Canvas() {
@@ -180,7 +180,7 @@ export default function Canvas() {
             onClick={() => setShowOutlines(!showOutlines)}
             className={cn(
               "px-2 py-1 text-[9px] font-bold uppercase tracking-tighter rounded transition-all",
-              showOutlines ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"
+              showOutlines ? "bg-accent-primary text-white" : "text-zinc-500 hover:text-zinc-300"
             )}
           >
             Outlines
@@ -189,7 +189,7 @@ export default function Canvas() {
             onClick={() => setShowEmptySlots(!showEmptySlots)}
             className={cn(
               "px-2 py-1 text-[9px] font-bold uppercase tracking-tighter rounded transition-all",
-              showEmptySlots ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"
+              showEmptySlots ? "bg-accent-primary text-white" : "text-zinc-500 hover:text-zinc-300"
             )}
           >
             Slots
@@ -240,9 +240,9 @@ export default function Canvas() {
             ...tokenStyles
           }}
           className={cn(
-            "min-h-[80vh] bg-white shadow-2xl transition-all relative",
+            "min-h-[80vh] bg-white text-zinc-900 shadow-2xl transition-all relative",
             !isPreview && "rounded-sm",
-            isOver && !isPreview && "ring-2 ring-purple-500 ring-inset"
+            isOver && !isPreview && "ring-2 ring-accent-primary ring-inset"
           )}
           ref={setNodeRef}
           onClick={(e) => {
@@ -265,19 +265,19 @@ export default function Canvas() {
               />
               
               {/* Container Guides */}
-              <div className="absolute inset-y-0 left-1/2 -translate-x-[600px] w-px bg-purple-500/10 pointer-events-none hidden xl:block" />
-              <div className="absolute inset-y-0 left-1/2 translate-x-[600px] w-px bg-purple-500/10 pointer-events-none hidden xl:block" />
+              <div className="absolute inset-y-0 left-1/2 -translate-x-[600px] w-px bg-accent-primary/10 pointer-events-none hidden xl:block" />
+              <div className="absolute inset-y-0 left-1/2 translate-x-[600px] w-px bg-accent-primary/10 pointer-events-none hidden xl:block" />
             </>
           )}
 
           <AnimatePresence>
             {isolatedElementId && (
-              <div key="isolation-badge" className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-lg">
+              <div key="isolation-badge" className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-accent-primary text-white text-[10px] font-bold rounded-full shadow-lg">
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 Isolation Mode
                 <button 
                   onClick={() => setIsolatedElementId(null)}
-                  className="ml-2 hover:text-blue-200 transition-colors"
+                  className="ml-2 hover:text-accent-primary transition-colors"
                 >
                   Exit
                 </button>
@@ -286,8 +286,8 @@ export default function Canvas() {
             {elementsToRender.length === 0 ? (
               <div key="empty-canvas" className="h-[70vh] flex flex-col items-center justify-center text-zinc-300 p-12 text-center">
                 <div className="w-20 h-20 border-2 border-dashed border-zinc-200 rounded-2xl mb-6 flex items-center justify-center bg-zinc-50">
-                  <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
-                    <div className="w-4 h-4 bg-purple-500 rounded-sm rotate-45" />
+                  <div className="w-10 h-10 bg-accent-primary/10 rounded-full flex items-center justify-center">
+                    <div className="w-4 h-4 bg-accent-primary rounded-sm rotate-45" />
                   </div>
                 </div>
                 <h3 className="text-zinc-900 font-bold text-2xl tracking-tight">Start your masterpiece</h3>
@@ -332,11 +332,11 @@ function DropIndicator({ parentId, index }: { parentId?: string; index: number }
       ref={setNodeRef}
       className={cn(
         "h-1.5 w-full transition-all duration-300 relative z-50",
-        isOver ? "bg-purple-500 opacity-100 my-3 scale-y-125 shadow-[0_0_15px_rgba(168,85,247,0.5)]" : "opacity-0 hover:opacity-20"
+        isOver ? "bg-accent-primary opacity-100 my-3 scale-y-125 shadow-[0_0_15px_var(--accent-primary)]" : "opacity-0 hover:opacity-20"
       )}
     >
       {isOver && (
-        <div className="absolute -left-1 -top-1 w-3 h-3 bg-purple-500 rounded-full animate-ping opacity-75" />
+        <div className="absolute -left-1 -top-1 w-3 h-3 bg-accent-primary rounded-full animate-ping opacity-75" />
       )}
     </div>
   );
@@ -502,17 +502,17 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     onMouseLeave: () => !isPreview && setHoveredElementId(null),
     className: cn(
       "relative group transition-all duration-300",
-      !isPreview && isSelected && "outline outline-2 outline-purple-500 outline-offset-[-2px] z-10 shadow-[0_0_20px_rgba(168,85,247,0.25)]",
-      !isPreview && !isSelected && isHovered && !element.locked && "outline outline-1 outline-purple-400/50 outline-offset-[-1px] z-10",
-      !isPreview && !isSelected && !isHovered && !element.locked && "hover:outline hover:outline-1 hover:outline-purple-400/50 hover:outline-offset-[-1px]",
-      !isPreview && isOver && definition.isContainer && "bg-purple-500/5 ring-2 ring-purple-400 ring-inset",
-      showOutlines && !isPreview && "outline outline-1 outline-blue-500/20",
+      !isPreview && isSelected && "outline outline-2 outline-accent-primary outline-offset-[-2px] z-10 shadow-[0_0_20px_var(--accent-primary)]",
+      !isPreview && !isSelected && isHovered && !element.locked && "outline outline-1 outline-accent-primary/50 outline-offset-[-1px] z-10",
+      !isPreview && !isSelected && !isHovered && !element.locked && "hover:outline hover:outline-1 hover:outline-accent-primary/50 hover:outline-offset-[-1px]",
+      !isPreview && isOver && definition.isContainer && "bg-accent-primary/5 ring-2 ring-accent-primary ring-inset",
+      showOutlines && !isPreview && "outline outline-1 outline-accent-primary/20",
       element.locked && "opacity-80 cursor-not-allowed"
     )
   };
 
   const actionButtons = !isPreview && isSelected && (
-    <div className="absolute -top-10 right-0 flex items-center gap-1 bg-purple-600 p-1 rounded-lg shadow-xl shadow-purple-900/40 z-[100]">
+    <div className="absolute -top-10 right-0 flex items-center gap-1 bg-accent-primary p-1 rounded-lg shadow-xl shadow-accent-primary/40 z-[100]">
       <button 
         onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
         className="p-1.5 hover:bg-white/20 rounded transition-colors text-white"
@@ -574,8 +574,8 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       {...listeners}
     >
       <span className={cn(
-        "text-[9px] font-bold px-2 py-0.5 rounded-t-sm uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-purple-900/20",
-        element.isMaster ? "bg-amber-600" : element.isSlot ? "bg-emerald-600" : "bg-purple-600"
+        "text-[9px] font-bold px-2 py-0.5 rounded-t-sm uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-accent-primary/20",
+        element.isMaster ? "bg-amber-600" : element.isSlot ? "bg-emerald-600" : "bg-accent-primary"
       )}>
         <Move className="w-2.5 h-2.5" />
         {element.isMaster ? `Master: ${element.type}` : element.isSlot ? `Slot: ${element.type}` : element.type}
@@ -950,7 +950,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                     />
                   </div>
                 ) : (
-                  <div className="font-bold text-xl">{element.props.logoText || 'Nexus'}</div>
+                  <div className="font-bold text-xl">{element.props.logoText || 'ETHEREAL'}</div>
                 )}
               </div>
 
@@ -982,8 +982,8 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                               setOpenDropdownId(isOpen ? null : item.id);
                             }}
                             className={cn(
-                              "flex items-center gap-1 text-sm font-medium hover:text-blue-500 cursor-pointer transition-colors",
-                              isOpen && "text-blue-500"
+                              "flex items-center gap-1 text-sm font-medium hover:text-accent-primary cursor-pointer transition-colors",
+                              isOpen && "text-accent-primary"
                             )}
                           >
                             {item.name}
@@ -1002,7 +1002,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                                   <a 
                                     key={page.id || `page-${pIdx}`} 
                                     href={page.id}
-                                    className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                    className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-accent-primary hover:text-accent-primary transition-colors"
                                     onClick={(e) => {
                                       handleLinkClick(e, page.id, 'internal');
                                       setOpenDropdownId(null);
@@ -1022,7 +1022,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                       <a 
                         key={`nav-item-${itemId}`} 
                         href={item.href}
-                        className="text-sm font-medium hover:text-blue-500 cursor-pointer transition-colors"
+                        className="text-sm font-medium hover:text-accent-primary cursor-pointer transition-colors"
                         onClick={(e) => handleLinkClick(e, item.href, 'internal')}
                       >
                         {item.name}
@@ -1059,7 +1059,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                               <a 
                                 key={page.id || `mobile-page-${pIdx}`} 
                                 href={page.id}
-                                className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-8 rounded-lg hover:bg-black/5 transition-colors"
+                                className="text-base font-medium hover:text-accent-primary cursor-pointer py-3 px-8 rounded-lg hover:bg-black/5 transition-colors"
                                 onClick={(e) => {
                                   handleLinkClick(e, page.id, 'internal');
                                   updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
@@ -1077,7 +1077,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                       <a 
                         key={`nav-mobile-item-${itemId}`} 
                         href={item.href}
-                        className="text-base font-medium hover:text-blue-500 cursor-pointer py-3 px-4 rounded-lg hover:bg-black/5 transition-colors"
+                        className="text-base font-medium hover:text-accent-primary cursor-pointer py-3 px-4 rounded-lg hover:bg-black/5 transition-colors"
                         onClick={(e) => {
                           handleLinkClick(e, item.href, 'internal');
                           updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });

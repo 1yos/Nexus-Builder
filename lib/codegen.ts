@@ -66,7 +66,7 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
     if (el.type === 'navbar') {
       const logo = el.props.logoType === 'image' 
         ? `<img src="${el.props.logoSrc}" alt="Logo" style="height: 32px;" />`
-        : `<div style="font-weight: bold; font-size: 1.25rem;">${el.props.logoText || 'Nexus'}</div>`;
+        : `<div style="font-weight: bold; font-size: 1.25rem;">${el.props.logoText || 'ETHEREAL'}</div>`;
       
       // Dynamic links from pages and folders
       const dynamicLinks = ([
@@ -206,7 +206,7 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
     if (el.type === 'navbar') {
       const logo = el.props.logoType === 'image' 
         ? `<img src="${el.props.logoSrc}" alt="Logo" style={{ height: '32px' }} />`
-        : `<div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{${JSON.stringify(el.props.logoText || 'Nexus')}}</div>`;
+        : `<div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{${JSON.stringify(el.props.logoText || 'ETHEREAL')}}</div>`;
       
       // Dynamic links from pages and folders
       const dynamicLinks = ([
@@ -272,7 +272,7 @@ import * as Icons from 'lucide-react';
 
 export default function ${componentName}() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ backgroundColor: '#0A0A0F', color: '#FFFFFF' }}>
 ${elements.map(el => renderElement(el, 6)).join('\n')}
     </div>
   );
@@ -293,7 +293,7 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[]): 
     <title>${page.name}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #111827; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #FFFFFF; background-color: #0A0A0F; }
         a { text-decoration: none; color: inherit; }
         img { max-width: 100%; height: auto; }
         [data-lucide] { display: inline-block; vertical-align: middle; }
@@ -383,7 +383,7 @@ export default defineConfig({
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nexus Exported Site</title>
+    <title>ETHEREAL Exported Site</title>
   </head>
   <body>
     <div id="root"></div>
@@ -403,7 +403,7 @@ ReactDom.createRoot(document.getElementById('root')!).render(
 )`;
 
     site['src/index.css'] = `* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #111827; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #FFFFFF; background-color: #0A0A0F; }
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; height: auto; }`;
 

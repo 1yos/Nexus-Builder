@@ -6,12 +6,13 @@ import {
   LayoutDashboard, 
   Settings, 
   CreditCard, 
-  Zap, 
-  Plus,
+  Hexagon, 
   LogOut,
-  FolderOpen
+  FolderOpen,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'motion/react';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Projects', href: '/dashboard' },
@@ -24,54 +25,71 @@ export default function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-white border-r border-zinc-200 flex flex-col h-screen sticky top-0">
-      <div className="p-6">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-            <Zap className="w-5 h-5 fill-current" />
-          </div>
-          <span className="font-bold text-xl tracking-tight">Nexus</span>
+    <aside className="w-72 bg-surface border-r border-border flex flex-col h-screen sticky top-0 z-40">
+      <div className="p-8">
+        <Link href="/" className="flex items-center gap-3 group">
+          <motion.div 
+            whileHover={{ rotate: 180, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="w-10 h-10 bg-accent-gradient rounded-xl flex items-center justify-center shadow-lg shadow-[var(--accent-primary)]/20"
+          >
+            <Hexagon className="w-6 h-6 text-white fill-current" />
+          </motion.div>
+          <span className="text-2xl font-black tracking-widest text-text-primary uppercase">
+            ETHEREAL
+          </span>
         </Link>
       </div>
 
-      <nav className="flex-grow px-4 space-y-1">
+      <nav className="flex-grow px-4 space-y-2">
         {menuItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
+              "flex items-center gap-4 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all relative group",
               pathname === item.href 
-                ? "bg-blue-50 text-blue-600" 
-                : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                ? "text-white" 
+                : "text-text-secondary hover:text-text-primary hover:bg-white/5"
             )}
           >
-            <item.icon className="w-5 h-5" />
+            {pathname === item.href && (
+              <motion.div 
+                layoutId="activeNav"
+                className="absolute inset-0 bg-accent-gradient rounded-2xl -z-10 shadow-lg shadow-[var(--accent-primary)]/20"
+              />
+            )}
+            <item.icon className={cn("w-5 h-5", pathname === item.href ? "text-white" : "text-text-secondary group-hover:text-text-primary")} />
             {item.label}
           </Link>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-zinc-100">
-        <div className="bg-zinc-50 rounded-2xl p-4 mb-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-              JD
+      <div className="p-6 space-y-4 border-t border-border">
+        <div className="bg-background/50 backdrop-blur-md rounded-3xl p-6 border border-border relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-2">
+            <Sparkles className="w-4 h-4 text-accent-primary opacity-20 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-10 h-10 rounded-full bg-accent-gradient p-[1px]">
+              <div className="w-full h-full rounded-full bg-surface flex items-center justify-center text-text-primary font-black text-xs">
+                JD
+              </div>
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-bold text-zinc-900 truncate">John Doe</p>
-              <p className="text-xs text-zinc-500 truncate">Free Plan</p>
+              <p className="text-sm font-black text-text-primary truncate tracking-tight">John Doe</p>
+              <p className="text-[10px] text-text-secondary font-black uppercase tracking-widest">Free Plan</p>
             </div>
           </div>
           <Link 
             href="/pricing" 
-            className="block w-full py-2 bg-white border border-zinc-200 rounded-lg text-center text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition-colors"
+            className="block w-full py-3 bg-accent-gradient text-white rounded-xl text-center text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[var(--accent-primary)]/20 hover:shadow-[var(--accent-primary)]/40 transition-all"
           >
             Upgrade to Pro
           </Link>
         </div>
         
-        <button className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-medium text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-all">
+        <button className="flex items-center gap-4 px-6 py-4 w-full rounded-2xl text-sm font-black uppercase tracking-widest text-text-secondary hover:text-red-500 hover:bg-red-500/10 transition-all">
           <LogOut className="w-5 h-5" />
           Log out
         </button>

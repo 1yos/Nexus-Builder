@@ -39,10 +39,10 @@ export default function Toolbar() {
     <header className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 z-50">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-accent-primary rounded-lg flex items-center justify-center">
             <span className="text-white font-black text-lg">N</span>
           </div>
-          <span className="font-bold text-zinc-200 tracking-tight">Nexus Builder</span>
+          <span className="font-bold text-zinc-200 tracking-tight">ETHEREAL Builder</span>
         </div>
 
         {!isPreview && (
@@ -123,7 +123,7 @@ export default function Toolbar() {
         </button>
         <button 
           onClick={() => setPreview(!isPreview)}
-          className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${isPreview ? 'bg-blue-600 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
+          className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${isPreview ? 'bg-accent-primary text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
         >
           <Eye className="w-4 h-4" />
           <span>{isPreview ? 'Back to Editor' : 'Preview'}</span>
@@ -131,7 +131,7 @@ export default function Toolbar() {
         {!isPreview && (
           <button 
             onClick={() => router.push('/publish')}
-            className="flex items-center gap-2 px-4 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-md transition-all shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 px-4 py-1.5 text-sm font-bold text-white bg-accent-primary hover:bg-accent-primary rounded-md transition-all shadow-lg shadow-accent-primary/20"
           >
             <Download className="w-4 h-4" />
             <span>Export</span>

@@ -72,25 +72,25 @@ export default function RightPanel() {
         <div className="flex-1 flex flex-col gap-4 mt-8">
           <button
             onClick={() => { setRightPanelTab('style'); setRightPanelCollapsed(false); }}
-            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'style' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'style' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
           >
             <Palette className="w-5 h-5" />
           </button>
           <button
             onClick={() => { setRightPanelTab('content'); setRightPanelCollapsed(false); }}
-            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'content' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'content' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
           >
             <Settings2 className="w-5 h-5" />
           </button>
           <button
             onClick={() => { setRightPanelTab('layout'); setRightPanelCollapsed(false); }}
-            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'layout' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'layout' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
           >
             <LayoutIcon className="w-5 h-5" />
           </button>
           <button
             onClick={() => { setRightPanelTab('animations'); setRightPanelCollapsed(false); }}
-            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'animations' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+            className={cn("p-2 rounded-md transition-colors", rightPanelTab === 'animations' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
           >
             <Activity className="w-5 h-5" />
           </button>
@@ -218,8 +218,8 @@ export default function RightPanel() {
 
       <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 bg-blue-500/10 rounded-md border border-blue-500/20">
-            {React.createElement(COMPONENT_REGISTRY[selectedElement.type as ComponentType].icon as any, { className: "w-3.5 h-3.5 text-blue-500" })}
+          <div className="p-1.5 bg-accent-primary/10 rounded-md border border-accent-primary/20">
+            {React.createElement(COMPONENT_REGISTRY[selectedElement.type as ComponentType].icon as any, { className: "w-3.5 h-3.5 text-accent-primary" })}
           </div>
           <div>
             <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-200">
@@ -246,7 +246,7 @@ export default function RightPanel() {
           {!selectedElement.isGlobal && (
             <button 
               onClick={() => convertToGlobal(selectedElement.id)}
-              className="p-1.5 hover:bg-purple-500/10 text-zinc-500 hover:text-purple-500 rounded-md transition-all"
+              className="p-1.5 hover:bg-accent-primary/10 text-zinc-500 hover:text-accent-primary rounded-md transition-all"
               title="Convert to Global Component"
             >
               <Globe className="w-3.5 h-3.5" />
@@ -254,7 +254,7 @@ export default function RightPanel() {
           )}
           <button 
             onClick={() => duplicateElement(selectedElement.id)}
-            className="p-1.5 hover:bg-blue-500/10 text-zinc-500 hover:text-blue-500 rounded-md transition-all"
+            className="p-1.5 hover:bg-accent-primary/10 text-zinc-500 hover:text-accent-primary rounded-md transition-all"
             title="Duplicate element"
           >
             <Copy className="w-3.5 h-3.5" />
@@ -340,7 +340,7 @@ export default function RightPanel() {
                     value={selectedElement.name || ''}
                     onChange={(e) => updateElement(selectedElement.id, { name: e.target.value })}
                     placeholder={`${selectedElement.type} name...`}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
                   />
                 </div>
 
@@ -350,7 +350,7 @@ export default function RightPanel() {
                     onClick={() => updateElement(selectedElement.id, { isSlot: !selectedElement.isSlot })}
                     className={cn(
                       "w-10 h-5 rounded-full transition-all relative",
-                      selectedElement.isSlot ? "bg-blue-600" : "bg-zinc-700"
+                      selectedElement.isSlot ? "bg-accent-primary" : "bg-zinc-700"
                     )}
                   >
                     <div className={cn(
@@ -397,7 +397,7 @@ export default function RightPanel() {
                           onClick={() => updateElement(selectedElement.id, { activeVariantId: variant.id, styles: { ...variant.styles } })}
                           className={cn(
                             "px-2 py-1 rounded text-[9px] font-bold uppercase transition-all",
-                            selectedElement.activeVariantId === variant.id ? "bg-blue-600 text-white" : "bg-zinc-700 text-zinc-400 hover:text-zinc-200"
+                            selectedElement.activeVariantId === variant.id ? "bg-accent-primary text-white" : "bg-zinc-700 text-zinc-400 hover:text-zinc-200"
                           )}
                         >
                           Apply
@@ -423,7 +423,7 @@ export default function RightPanel() {
                 <textarea
                   value={selectedElement.props.text}
                   onChange={(e) => handlePropChange('text', e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[100px] resize-none"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary min-h-[100px] resize-none"
                   placeholder="Enter text..."
                 />
               </PropertySection>
@@ -611,7 +611,7 @@ export default function RightPanel() {
                       className={cn(
                         "px-3 py-2 text-[10px] font-bold uppercase rounded-lg border transition-all",
                         selectedElement.variant === variant.id 
-                          ? "bg-purple-500/10 border-purple-500 text-purple-400" 
+                          ? "bg-accent-primary/10 border-accent-primary text-accent-primary" 
                           : "bg-zinc-800 border-zinc-700 text-zinc-500 hover:border-zinc-600"
                       )}
                     >
@@ -629,14 +629,14 @@ export default function RightPanel() {
                     type="text"
                     value={selectedElement.props.src}
                     onChange={(e) => handlePropChange('src', e.target.value)}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
                     placeholder="https://images.unsplash.com/..."
                   />
                   <input
                     type="text"
                     value={selectedElement.props.alt || ''}
                     onChange={(e) => handlePropChange('alt', e.target.value)}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
                     placeholder="Alt text"
                   />
                 </div>
@@ -671,7 +671,7 @@ export default function RightPanel() {
                     <select
                       value={selectedElement.props.href || ''}
                       onChange={(e) => handlePropChange('href', e.target.value)}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
                     >
                       <option value="">Select a page...</option>
                       {pages.map(page => (
@@ -684,7 +684,7 @@ export default function RightPanel() {
                       value={selectedElement.props.href || ''}
                       onChange={(e) => handlePropChange('href', e.target.value)}
                       placeholder="https://example.com"
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
                     />
                   )}
                 </div>
@@ -929,7 +929,7 @@ export default function RightPanel() {
                         onClick={() => handleStyleChange('flexDirection', 'row')}
                         className={cn(
                           "flex-1 p-2 rounded-lg border flex flex-col items-center gap-1 transition-all",
-                          currentStyles.flexDirection === 'row' ? "bg-blue-500/10 border-blue-500 text-blue-400" : "bg-zinc-800 border-zinc-700 text-zinc-500"
+                          currentStyles.flexDirection === 'row' ? "bg-accent-primary/10 border-accent-primary text-accent-primary" : "bg-zinc-800 border-zinc-700 text-zinc-500"
                         )}
                       >
                         <div className="flex gap-1">
@@ -942,7 +942,7 @@ export default function RightPanel() {
                         onClick={() => handleStyleChange('flexDirection', 'column')}
                         className={cn(
                           "flex-1 p-2 rounded-lg border flex flex-col items-center gap-1 transition-all",
-                          currentStyles.flexDirection === 'column' ? "bg-blue-500/10 border-blue-500 text-blue-400" : "bg-zinc-800 border-zinc-700 text-zinc-500"
+                          currentStyles.flexDirection === 'column' ? "bg-accent-primary/10 border-accent-primary text-accent-primary" : "bg-zinc-800 border-zinc-700 text-zinc-500"
                         )}
                       >
                         <div className="flex flex-col gap-1">
@@ -970,7 +970,7 @@ export default function RightPanel() {
                           onClick={() => handleStyleChange('justifyContent', item.id)}
                           className={cn(
                             "p-2 rounded-lg border flex flex-col items-center gap-1 transition-all",
-                            currentStyles.justifyContent === item.id ? "bg-blue-500/10 border-blue-500 text-blue-400" : "bg-zinc-800 border-zinc-700 text-zinc-500"
+                            currentStyles.justifyContent === item.id ? "bg-accent-primary/10 border-accent-primary text-accent-primary" : "bg-zinc-800 border-zinc-700 text-zinc-500"
                           )}
                         >
                           <item.icon className="w-3.5 h-3.5" />
@@ -995,7 +995,7 @@ export default function RightPanel() {
                           onClick={() => handleStyleChange('alignItems', item.id)}
                           className={cn(
                             "p-2 rounded-lg border flex flex-col items-center gap-1 transition-all",
-                            currentStyles.alignItems === item.id ? "bg-blue-500/10 border-blue-500 text-blue-400" : "bg-zinc-800 border-zinc-700 text-zinc-500"
+                            currentStyles.alignItems === item.id ? "bg-accent-primary/10 border-accent-primary text-accent-primary" : "bg-zinc-800 border-zinc-700 text-zinc-500"
                           )}
                         >
                           <item.icon className="w-3.5 h-3.5" />
@@ -1040,7 +1040,7 @@ export default function RightPanel() {
                         animations: [...(selectedElement.animations || []), newAnim]
                       });
                     }}
-                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                    className="flex-1 py-2 bg-accent-primary hover:bg-accent-primary text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Animation
@@ -1066,7 +1066,7 @@ export default function RightPanel() {
                       <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                         <button
                           onClick={() => setPlayingAnimationId(anim.id)}
-                          className="p-1 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-all"
+                          className="p-1 text-zinc-400 hover:text-accent-primary hover:bg-accent-primary/10 rounded transition-all"
                           title="Preview Animation"
                         >
                           <Activity className="w-3 h-3" />
@@ -1221,7 +1221,7 @@ export default function RightPanel() {
                       interactions: [...(selectedElement.interactions || []), newInteraction]
                     });
                   }}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-2 bg-accent-primary hover:bg-accent-primary text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add Interaction
@@ -1291,7 +1291,7 @@ export default function RightPanel() {
                                 );
                                 updateElement(selectedElement.id, { interactions: newInteractions });
                               }}
-                              className="text-[8px] font-bold text-blue-500 uppercase hover:underline"
+                              className="text-[8px] font-bold text-accent-primary uppercase hover:underline"
                             >
                               {interaction.useManualId ? 'Use List' : 'Manual ID'}
                             </button>
@@ -1308,7 +1308,7 @@ export default function RightPanel() {
                                 updateElement(selectedElement.id, { interactions: newInteractions });
                               }}
                               placeholder="Paste element ID here..."
-                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
                             />
                           ) : (
                             <select
@@ -1372,12 +1372,12 @@ function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; on
       onClick={onClick}
       className={cn(
         "flex flex-col items-center justify-center gap-1 py-2.5 transition-all relative overflow-hidden",
-        active ? "text-blue-500" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+        active ? "text-accent-primary" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
       )}
     >
       <Icon className="w-3.5 h-3.5 shrink-0" />
       <span className="text-[8px] font-bold uppercase tracking-tighter truncate w-full text-center px-0.5">{label}</span>
-      {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />}
+      {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-primary" />}
     </button>
   );
 }

@@ -30,7 +30,7 @@ export default function CodePanel() {
     <div className="flex flex-col h-full bg-zinc-950">
       <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CodeIcon className="w-4 h-4 text-blue-400" />
+          <CodeIcon className="w-4 h-4 text-accent-primary" />
           <h3 className="text-sm font-bold text-zinc-200">Live Code Mode</h3>
         </div>
         <button
@@ -46,7 +46,7 @@ export default function CodePanel() {
         <button
           onClick={() => setActiveTab('react')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-[10px] font-bold uppercase transition-all ${
-            activeTab === 'react' ? 'bg-zinc-800 text-blue-400' : 'text-zinc-500 hover:text-zinc-300'
+            activeTab === 'react' ? 'bg-zinc-800 text-accent-primary' : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
           <FileCode className="w-3 h-3" />
@@ -64,7 +64,7 @@ export default function CodePanel() {
         <button
           onClick={() => setActiveTab('json')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-[10px] font-bold uppercase transition-all ${
-            activeTab === 'json' ? 'bg-zinc-800 text-purple-400' : 'text-zinc-500 hover:text-zinc-300'
+            activeTab === 'json' ? 'bg-zinc-800 text-accent-primary' : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
           <FileJson className="w-3 h-3" />
@@ -72,7 +72,7 @@ export default function CodePanel() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 font-mono text-[11px] leading-relaxed text-zinc-400 selection:bg-blue-500/30">
+      <div className="flex-1 overflow-auto p-4 font-mono text-[11px] leading-relaxed text-zinc-400 selection:bg-accent-primary/30">
         <pre className="whitespace-pre-wrap">
           {code}
         </pre>

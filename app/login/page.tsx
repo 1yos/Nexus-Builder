@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { Zap, Mail, Lock, ArrowRight, Chrome } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Chrome } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import NexusLogo from '@/components/marketing/NexusLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,79 +23,101 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 selection:bg-accent-primary/30 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-accent-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-accent-secondary/5 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px]" />
+        <div className="absolute inset-0 noise opacity-[0.03]" />
+      </div>
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full"
+        className="max-w-md w-full relative z-10"
       >
         <div className="text-center mb-10">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-              <Zap className="w-6 h-6 fill-current" />
-            </div>
-            <span className="font-bold text-2xl tracking-tight text-zinc-900">Nexus</span>
+          <Link href="/" className="inline-flex flex-col items-center gap-4 mb-8 group">
+            <NexusLogo className="w-16 h-16" />
+            <span className="font-black text-4xl tracking-[0.4em] text-text-primary uppercase drop-shadow-[0_0_20px_rgba(59,130,246,0.4)]">NEXUS</span>
           </Link>
-          <h1 className="text-3xl font-bold text-zinc-900">Welcome back</h1>
-          <p className="text-zinc-500 mt-2">Enter your details to access your account</p>
+          <h1 className="text-3xl font-black text-text-primary tracking-tighter uppercase mb-2">ESTABLISH LINK</h1>
+          <p className="text-[10px] font-mono font-black text-text-secondary uppercase tracking-[0.3em] opacity-60">Provide credentials to access the network</p>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-xl shadow-zinc-200/50">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-bold text-zinc-700 mb-2">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+        <div className="bg-surface/30 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/5 shadow-2xl shadow-black/50 relative overflow-hidden group">
+          {/* Neon Glow Accents */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-accent-primary/10 blur-[80px] rounded-full -mr-24 -mt-24 group-hover:bg-accent-primary/20 transition-colors duration-700" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent-secondary/5 blur-[80px] rounded-full -ml-24 -mb-24" />
+          
+          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+            <div className="space-y-2">
+              <label className="block text-[9px] font-mono font-black text-text-secondary uppercase tracking-[0.4em] ml-1">COMMUNICATION VECTOR</label>
+              <div className="relative group/input">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within/input:text-accent-primary transition-colors duration-300" />
                 <input 
                   type="email"
                   required
-                  placeholder="name@company.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="signal@network.com"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-white/5 bg-background/40 text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/30 focus:border-accent-primary/50 transition-all placeholder:text-text-secondary/20 font-medium backdrop-blur-md"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-px bg-accent-primary group-focus-within/input:w-1/2 transition-all duration-500" />
               </div>
             </div>
 
-            <div>
-              <div className="flex justify-between mb-2">
-                <label className="block text-sm font-bold text-zinc-700">Password</label>
-                <Link href="#" className="text-xs font-bold text-blue-600 hover:underline">Forgot password?</Link>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center px-1">
+                <label className="block text-[9px] font-mono font-black text-text-secondary uppercase tracking-[0.4em]">ENCRYPTION KEY</label>
+                <Link href="#" className="text-[9px] font-mono font-black text-accent-primary hover:text-accent-highlight uppercase tracking-[0.2em] transition-colors">RECOVER KEY?</Link>
               </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <div className="relative group/input">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within/input:text-accent-primary transition-colors duration-300" />
                 <input 
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-white/5 bg-background/40 text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/30 focus:border-accent-primary/50 transition-all placeholder:text-text-secondary/20 font-medium backdrop-blur-md"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-px bg-accent-primary group-focus-within/input:w-1/2 transition-all duration-500" />
               </div>
             </div>
 
-            <button 
+            <motion.button 
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-50"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full relative group/btn overflow-hidden bg-white text-black py-5 rounded-2xl font-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 uppercase tracking-[0.2em] text-xs shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-accent-primary/20"
             >
-              {isLoading ? 'Logging in...' : 'Log in'} <ArrowRight className="w-5 h-5" />
-            </button>
+              <div className="absolute inset-0 bg-accent-gradient opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500" />
+              <span className="relative z-10 group-hover/btn:text-white transition-colors">
+                {isLoading ? 'AUTHENTICATING...' : 'CONNECT'}
+              </span>
+              <ArrowRight className="w-5 h-5 relative z-10 group-hover/btn:text-white transition-colors group-hover/btn:translate-x-1 transition-transform" />
+            </motion.button>
           </form>
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-100"></div></div>
-            <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold text-zinc-400 bg-white px-4">Or continue with</div>
+          <div className="relative my-10 z-10">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+            <div className="relative flex justify-center text-[9px] uppercase tracking-[0.4em] font-mono font-black text-text-secondary bg-transparent px-4 backdrop-blur-sm">OR BYPASS VIA</div>
           </div>
 
-          <button className="w-full bg-white border border-zinc-200 text-zinc-700 py-4 rounded-xl font-bold hover:bg-zinc-50 transition-all flex items-center justify-center gap-3">
-            <Chrome className="w-5 h-5" /> Google
-          </button>
+          <motion.button 
+            whileHover={{ scale: 1.01, backgroundColor: 'rgba(255,255,255,0.08)' }}
+            whileTap={{ scale: 0.99 }}
+            className="w-full bg-white/5 border border-white/10 text-text-primary py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-[10px] relative z-10"
+          >
+            <Chrome className="w-4 h-4 text-accent-primary" /> GOOGLE PROTOCOL
+          </motion.button>
         </div>
 
-        <p className="text-center mt-8 text-sm text-zinc-500">
-          Don&apos;t have an account? <Link href="/signup" className="font-bold text-blue-600 hover:underline">Sign up for free</Link>
+        <p className="text-center mt-10 text-[9px] font-mono font-black text-text-secondary uppercase tracking-[0.3em]">
+          NOT YET CONNECTED? <Link href="/signup" className="text-accent-primary hover:text-accent-highlight transition-colors">INITIALIZE IDENTITY</Link>
         </p>
       </motion.div>
     </div>

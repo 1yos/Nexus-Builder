@@ -128,7 +128,7 @@ export default function Editor() {
       onDragStart={handleDragStart} 
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200 selection:bg-blue-500/30">
+      <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200 selection:bg-accent-primary/30">
         <Toolbar />
         <div className="flex flex-1 overflow-hidden">
           {!isPreview && <LeftPanel />}
@@ -147,7 +147,7 @@ export default function Editor() {
               <span>{elements.length} Elements</span>
             </div>
             <div className="flex items-center gap-4">
-              <span>Nexus v1.0.0</span>
+              <span>ETHEREAL v1.0.0</span>
             </div>
           </div>
         )}
@@ -163,8 +163,8 @@ export default function Editor() {
         }),
       }}>
         {activeType ? (
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-blue-500 bg-zinc-800 shadow-2xl scale-105 rotate-3">
-            {React.createElement(COMPONENT_REGISTRY[activeType].icon as LucideIcon, { className: "w-5 h-5 text-blue-500 mb-2" })}
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-accent-primary bg-zinc-800 shadow-2xl scale-105 rotate-3">
+            {React.createElement(COMPONENT_REGISTRY[activeType].icon as LucideIcon, { className: "w-5 h-5 text-accent-primary mb-2" })}
             <span className="text-[11px] text-zinc-300 font-medium">{COMPONENT_REGISTRY[activeType].label}</span>
           </div>
         ) : null}

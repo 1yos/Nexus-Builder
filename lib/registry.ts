@@ -199,7 +199,7 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
     icon: Navigation,
     defaultProps: { 
       logoType: 'text',
-      logoText: 'Nexus', 
+      logoText: 'ETHEREAL', 
       logoSrc: '',
       links: [],
       mobileMenuType: 'hamburger',
@@ -288,7 +288,7 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
     type: 'footer',
     label: 'Footer',
     icon: Layout,
-    defaultProps: { copyright: '© 2026 Nexus Builder. All rights reserved.' },
+    defaultProps: { copyright: '© 2026 ETHEREAL Builder. All rights reserved.' },
     defaultStyles: {
       padding: '4rem 2rem',
       backgroundColor: '#111827',

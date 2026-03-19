@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  --color-zinc-950: #09090b;
-  --color-zinc-900: #18181b;
-  --color-zinc-800: #27272a;
-  --color-zinc-700: #3f3f46;
-  --color-zinc-600: #52525b;
-  --color-zinc-500: #71717a;
-  --color-zinc-400: #a1a1aa;
-  --color-zinc-300: #d4d4d8;
-  --color-zinc-200: #e4e4e7;
-  --color-zinc-100: #f4f4f5;
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-highlight: var(--accent-highlight);
+  --color-accent-gradient: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+}
+
+:root {
+  --background: #050508;
+  --surface: #0D0D12;
+  --card: #12121A;
+  --border: rgba(255, 255, 255, 0.08);
+  --text-primary: #FFFFFF;
+  --text-secondary: #94A3B8;
+  --accent-primary: #3B82F6;
+  --accent-secondary: #8B5CF6;
+  --accent-highlight: #22D3EE;
 }
 
 @layer base {
   body {
-    @apply bg-zinc-950 text-zinc-200;
+    @apply bg-background text-text-primary transition-colors duration-500;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
   }
 }
 
 @layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-md bg-card/80 border border-border rounded-xl shadow-lg;
+  }
+
+  .noise {
+    background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+    @apply opacity-[0.03] pointer-events-none;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-accent-gradient;
+    filter: drop-shadow(0 0 15px rgba(178, 141, 255, 0.3));
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(178, 141, 255, 0.5);
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -31,10 +66,21 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-zinc-800 rounded-full;
+    @apply bg-white/10 rounded-full;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-zinc-700;
+    @apply bg-white/20;
   }
+}
+
+@keyframes mesh {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(10%, 10%) rotate(120deg); }
+  66% { transform: translate(-10%, 20%) rotate(240deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+.animate-mesh {
+  animation: mesh 20s linear infinite;
 }

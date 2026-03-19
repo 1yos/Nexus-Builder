@@ -158,7 +158,7 @@ export default function PageSelector() {
         style={style}
         className={cn(
           "group flex items-center justify-between px-3 py-1.5 cursor-pointer text-sm text-zinc-400 hover:text-zinc-200",
-          activePageId === page.id && "text-blue-400 font-medium",
+          activePageId === page.id && "text-accent-primary font-medium",
           isDragging && "bg-zinc-800/50"
         )}
         onClick={() => setActivePage(page.id)}
@@ -325,7 +325,7 @@ export default function PageSelector() {
           className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-md text-sm font-medium text-zinc-200 transition-all min-w-[140px] justify-between"
         >
           <div className="flex items-center gap-2 truncate">
-            <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+            <FileText className="w-4 h-4 text-accent-primary shrink-0" />
             <span className="truncate">{activePage?.name}</span>
           </div>
           <ChevronDown className={cn("w-4 h-4 text-zinc-500 transition-transform", isOpen && "rotate-180")} />
@@ -371,7 +371,7 @@ export default function PageSelector() {
                     value={isAdding === 'page' ? newPageName : newFolderName}
                     onChange={(e) => isAdding === 'page' ? setNewPageName(e.target.value) : setNewFolderName(e.target.value)}
                     placeholder={`${isAdding === 'page' ? 'Page' : 'Folder'} name...`}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
                     onBlur={() => !(isAdding === 'page' ? newPageName : newFolderName) && setIsAdding(null)}
                   />
                 </form>

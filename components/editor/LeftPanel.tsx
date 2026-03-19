@@ -25,13 +25,13 @@ export default function LeftPanel() {
         <div className="flex-1 flex flex-col gap-4 mt-8">
           <button
             onClick={() => { setLeftPanelTab('components'); setLeftPanelCollapsed(false); }}
-            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'components' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'components' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
           >
             <Box className="w-5 h-5" />
           </button>
           <button
             onClick={() => { setLeftPanelTab('layers'); setLeftPanelCollapsed(false); }}
-            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'layers' ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300")}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'layers' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
           >
             <Layers className="w-5 h-5" />
           </button>
@@ -67,7 +67,7 @@ export default function LeftPanel() {
           onClick={() => setLeftPanelTab('components')}
           className={cn(
             "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
-            leftPanelTab === 'components' ? "text-blue-500 border-b-2 border-blue-500 bg-blue-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+            leftPanelTab === 'components' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
           <Box className="w-3.5 h-3.5 shrink-0" />
@@ -77,7 +77,7 @@ export default function LeftPanel() {
           onClick={() => setLeftPanelTab('layers')}
           className={cn(
             "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
-            leftPanelTab === 'layers' ? "text-blue-500 border-b-2 border-blue-500 bg-blue-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+            leftPanelTab === 'layers' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
           <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -128,7 +128,7 @@ function ComponentsTab() {
             placeholder="Search components..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md py-1.5 pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-md py-1.5 pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent-primary transition-all"
           />
         </div>
       </div>
@@ -183,17 +183,17 @@ function DraggableComponent({ type }: { type: keyof typeof COMPONENT_REGISTRY })
       case 'paragraph':
         return <div className="w-full h-12 flex flex-col justify-center gap-1"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-2/3 h-1 bg-zinc-700 rounded-full" /></div>;
       case 'button':
-        return <div className="w-full h-12 flex items-center justify-center"><div className="w-full h-6 bg-blue-500/20 border border-blue-500/50 rounded flex items-center justify-center"><div className="w-8 h-1 bg-blue-500/50 rounded-full" /></div></div>;
+        return <div className="w-full h-12 flex items-center justify-center"><div className="w-full h-6 bg-accent-primary/20 border border-accent-primary/50 rounded flex items-center justify-center"><div className="w-8 h-1 bg-accent-primary/50 rounded-full" /></div></div>;
       case 'image':
         return <div className="w-full h-12 bg-zinc-800 rounded border border-zinc-700 flex items-center justify-center"><ImageIcon className="w-4 h-4 text-zinc-600" /></div>;
       case 'navbar':
         return <div className="w-full h-12 flex flex-col gap-1"><div className="w-full h-3 bg-zinc-800 border border-zinc-700 rounded flex items-center justify-between px-1"><div className="w-2 h-1 bg-zinc-600 rounded-full" /><div className="flex gap-0.5"><div className="w-1 h-0.5 bg-zinc-600 rounded-full" /><div className="w-1 h-0.5 bg-zinc-600 rounded-full" /></div></div><div className="flex-1 bg-zinc-800/20 rounded" /></div>;
       case 'hero':
-        return <div className="w-full h-12 bg-zinc-800 rounded border border-zinc-700 flex flex-col items-center justify-center gap-1 p-2"><div className="w-2/3 h-1.5 bg-zinc-700 rounded-full" /><div className="w-1/2 h-1 bg-zinc-700 rounded-full opacity-50" /><div className="w-1/3 h-2 bg-blue-500/30 rounded mt-1" /></div>;
+        return <div className="w-full h-12 bg-zinc-800 rounded border border-zinc-700 flex flex-col items-center justify-center gap-1 p-2"><div className="w-2/3 h-1.5 bg-zinc-700 rounded-full" /><div className="w-1/2 h-1 bg-zinc-700 rounded-full opacity-50" /><div className="w-1/3 h-2 bg-accent-primary/30 rounded mt-1" /></div>;
       case 'card':
         return <div className="w-full h-12 flex items-center justify-center"><div className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded p-1 flex flex-col gap-1"><div className="w-full h-3 bg-zinc-700 rounded-sm" /><div className="w-2/3 h-1 bg-zinc-700 rounded-full" /></div></div>;
       case 'pricing':
-        return <div className="w-full h-12 flex gap-1 p-1"><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-blue-500/20 rounded" /></div><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1 scale-110 z-10 shadow-xl"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-blue-500/40 rounded" /></div><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-blue-500/20 rounded" /></div></div>;
+        return <div className="w-full h-12 flex gap-1 p-1"><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-accent-primary/20 rounded" /></div><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1 scale-110 z-10 shadow-xl"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-accent-primary/40 rounded" /></div><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-accent-primary/20 rounded" /></div></div>;
       case 'features':
         return <div className="w-full h-12 grid grid-cols-3 gap-1 p-1"><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /></div>;
       default:
@@ -209,14 +209,14 @@ function DraggableComponent({ type }: { type: keyof typeof COMPONENT_REGISTRY })
       className={cn(
         "flex flex-col p-2 rounded-xl border border-zinc-800 bg-zinc-900/50",
         "hover:bg-zinc-800 hover:border-zinc-700 transition-all cursor-grab active:cursor-grabbing group",
-        isDragging && "opacity-50 ring-2 ring-blue-500"
+        isDragging && "opacity-50 ring-2 ring-accent-primary"
       )}
     >
       <div className="mb-2 overflow-hidden rounded-lg bg-zinc-950/50 group-hover:bg-zinc-950 transition-colors">
         {renderPreview()}
       </div>
       <div className="flex items-center gap-2 px-1">
-        <Icon className="w-3 h-3 text-zinc-500 group-hover:text-blue-500 transition-colors" />
+        <Icon className="w-3 h-3 text-zinc-500 group-hover:text-accent-primary transition-colors" />
         <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider group-hover:text-zinc-200 transition-colors">{component.label}</span>
       </div>
     </div>
@@ -238,7 +238,7 @@ function TokensTab() {
             type: 'color',
             category: 'brand'
           })}
-          className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-all"
+          className="p-1.5 bg-accent-primary hover:bg-accent-primary text-white rounded-md transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
@@ -320,7 +320,7 @@ function LayersTab() {
               groupElements(selectedIds);
               setSelectedIds([]);
             }}
-            className="flex items-center gap-1.5 px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold uppercase rounded transition-all"
+            className="flex items-center gap-1.5 px-2 py-1 bg-accent-primary hover:bg-accent-primary text-white text-[9px] font-bold uppercase rounded transition-all"
           >
             <Group className="w-3 h-3" />
             Group ({selectedIds.length})
@@ -398,12 +398,12 @@ function LayerItem({
         onDoubleClick={() => setIsEditing(true)}
         className={cn(
           "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all relative",
-          isSelected ? "bg-blue-600/20 text-blue-400" : isHovered ? "bg-zinc-800/50 text-zinc-200" : "hover:bg-zinc-800/30 text-zinc-400 hover:text-zinc-200",
+          isSelected ? "bg-accent-primary/20 text-accent-primary" : isHovered ? "bg-zinc-800/50 text-zinc-200" : "hover:bg-zinc-800/30 text-zinc-400 hover:text-zinc-200",
           element.locked && "opacity-60 cursor-not-allowed"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
-        {isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-blue-500 rounded-full" />}
+        {isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-accent-primary rounded-full" />}
         {isHovered && !isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-zinc-600 rounded-full" />}
         
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -414,7 +414,7 @@ function LayerItem({
               e.stopPropagation();
               toggleSelect(element.id);
             }}
-            className="w-3 h-3 rounded border-zinc-700 bg-zinc-800 text-blue-600 focus:ring-0 focus:ring-offset-0 transition-all opacity-0 group-hover:opacity-100 checked:opacity-100"
+            className="w-3 h-3 rounded border-zinc-700 bg-zinc-800 text-accent-primary focus:ring-0 focus:ring-offset-0 transition-all opacity-0 group-hover:opacity-100 checked:opacity-100"
             onClick={(e) => e.stopPropagation()}
           />
           {hasChildren ? (
@@ -430,7 +430,7 @@ function LayerItem({
           ) : (
             <div className="w-4" />
           )}
-          <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", isSelected ? "text-blue-400" : "text-zinc-500")} />
+          <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", isSelected ? "text-accent-primary" : "text-zinc-500")} />
           
           {isEditing ? (
             <input
@@ -439,7 +439,7 @@ function LayerItem({
               onChange={(e) => setTempName(e.target.value)}
               onBlur={handleRename}
               onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-              className="bg-zinc-800 text-[11px] font-medium px-1 rounded border border-blue-500 focus:outline-none w-full"
+              className="bg-zinc-800 text-[11px] font-medium px-1 rounded border border-accent-primary focus:outline-none w-full"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
@@ -460,7 +460,7 @@ function LayerItem({
             }}
             className={cn(
               "p-1 hover:bg-zinc-700 rounded transition-colors",
-              isolatedElementId === element.id ? "text-blue-500" : "text-zinc-500 hover:text-zinc-200"
+              isolatedElementId === element.id ? "text-accent-primary" : "text-zinc-500 hover:text-zinc-200"
             )}
             title="Isolate"
           >

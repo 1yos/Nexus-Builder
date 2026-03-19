@@ -1,7 +1,7 @@
 'use client';
 
 import DashboardSidebar from '@/components/dashboard/Sidebar';
-import { Globe, Download, Link as LinkIcon, Check, ArrowRight, Zap, Shield, Server } from 'lucide-react';
+import { Globe, Download, Link as LinkIcon, Check, ArrowRight, Hexagon, Shield, Server } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
@@ -38,7 +38,7 @@ export default function PublishPage() {
 
   const handleExport = async () => {
     if (pages.length === 0) {
-      setExportError('No pages to export. Please build something first!');
+      setExportError('No nodes to export. Initialize a construct first.');
       return;
     }
 
@@ -56,7 +56,7 @@ export default function PublishPage() {
       const blob = await zip.generateAsync({ type: 'blob' });
       
       const url = URL.createObjectURL(blob);
-      const filename = `nexus-site-${exportFormat}-export.zip`;
+      const filename = `ethereal-construct-${exportFormat}-export.zip`;
       
       setDownloadUrl(url);
       setDownloadName(filename);
@@ -71,21 +71,26 @@ export default function PublishPage() {
       
     } catch (error) {
       console.error('Export failed:', error);
-      setExportError('Export failed. Please try again.');
+      setExportError('Extraction failed. Signal lost.');
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-background selection:bg-[var(--accent-primary)]/30">
       <DashboardSidebar />
       
-      <main className="flex-grow p-8">
-        <div className="max-w-4xl mx-auto">
+      <main className="flex-grow p-8 relative overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--accent-primary)]/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[var(--accent-secondary)]/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+        <div className="absolute inset-0 noise opacity-[0.03] pointer-events-none -z-10" />
+
+        <div className="max-w-4xl mx-auto relative z-10">
           <header className="mb-10">
-            <h1 className="text-3xl font-bold text-zinc-900">Publish & Export</h1>
-            <p className="text-zinc-500">Launch your site to the world or download the source code.</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight uppercase">DEPLOYMENT & EXTRACTION</h1>
+            <p className="text-text-secondary font-medium">Broadcast your construct or extract the source matrix.</p>
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -93,34 +98,34 @@ export default function PublishPage() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl border border-zinc-200 p-8 flex flex-col"
+              className="bg-surface/50 backdrop-blur-xl rounded-3xl border border-border p-8 flex flex-col shadow-2xl shadow-[var(--accent-primary)]/5 hover:border-[var(--accent-primary)]/30 transition-colors group"
             >
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6">
+              <div className="w-12 h-12 bg-background rounded-xl flex items-center justify-center text-[var(--accent-primary)] mb-6 border border-border group-hover:border-[var(--accent-primary)]/50 transition-colors">
                 <Globe className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-zinc-900 mb-2">Publish to Nexus</h2>
-              <p className="text-zinc-500 text-sm mb-8 flex-grow">
-                Launch your site instantly on a free Nexus subdomain. 
-                Includes free SSL and global CDN.
+              <h2 className="text-xl font-black text-text-primary mb-2 uppercase tracking-wide">BROADCAST TO ETHEREAL</h2>
+              <p className="text-text-secondary text-sm mb-8 flex-grow font-medium">
+                Establish an instant uplink on a free Ethereal subdomain. 
+                Includes encrypted transmission and global node distribution.
               </p>
               
-              <div className="bg-zinc-50 p-4 rounded-xl mb-8 border border-zinc-100">
-                <div className="flex items-center gap-2 text-sm font-medium text-zinc-600">
-                  <span className="text-zinc-400">URL:</span>
-                  <span className="text-blue-600">my-awesome-startup.nexus.site</span>
+              <div className="bg-background p-4 rounded-xl mb-8 border border-border">
+                <div className="flex items-center gap-2 text-sm font-black text-text-secondary uppercase tracking-widest">
+                  <span className="text-text-secondary/70">VECTOR:</span>
+                  <span className="text-[var(--accent-primary)]">alpha-construct.ethereal.network</span>
                 </div>
               </div>
 
               <button 
                 onClick={handlePublish}
                 disabled={isPublishing || isPublished}
-                className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                className={`w-full py-4 rounded-xl font-black transition-all flex items-center justify-center gap-2 uppercase tracking-widest ${
                   isPublished 
-                    ? 'bg-green-50 text-green-600 border border-green-100' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200'
+                    ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                    : 'bg-accent-gradient text-white hover:shadow-lg hover:shadow-[var(--accent-primary)]/20'
                 }`}
               >
-                {isPublishing ? 'Publishing...' : isPublished ? <><Check className="w-5 h-5" /> Published</> : 'Publish Now'}
+                {isPublishing ? 'ESTABLISHING UPLINK...' : isPublished ? <><Check className="w-5 h-5" /> BROADCAST ACTIVE</> : 'INITIATE BROADCAST'}
               </button>
             </motion.div>
 
@@ -129,82 +134,82 @@ export default function PublishPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl border border-zinc-200 p-8 flex flex-col"
+              className="bg-surface/50 backdrop-blur-xl rounded-3xl border border-border p-8 flex flex-col shadow-2xl shadow-[var(--accent-secondary)]/5 hover:border-[var(--accent-secondary)]/30 transition-colors group"
             >
-              <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-6">
+              <div className="w-12 h-12 bg-background rounded-xl flex items-center justify-center text-[var(--accent-secondary)] mb-6 border border-border group-hover:border-[var(--accent-secondary)]/50 transition-colors">
                 <Download className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-zinc-900 mb-2">Export Source Code</h2>
-              <p className="text-zinc-500 text-sm mb-8 flex-grow">
-                Download a clean, production-ready bundle of HTML, CSS, and JavaScript. 
-                Host it anywhere you like.
+              <h2 className="text-xl font-black text-text-primary mb-2 uppercase tracking-wide">EXTRACT SOURCE MATRIX</h2>
+              <p className="text-text-secondary text-sm mb-8 flex-grow font-medium">
+                Download a pristine, production-ready bundle of HTML, CSS, and JavaScript. 
+                Deploy to any external node.
               </p>
 
               <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                  <Check className="w-4 h-4 text-green-500" /> Optimized Assets
+                <div className="flex items-center gap-3 text-xs font-black text-text-secondary uppercase tracking-widest">
+                  <Check className="w-4 h-4 text-[var(--accent-primary)]" /> OPTIMIZED ASSETS
                 </div>
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                  <Check className="w-4 h-4 text-green-500" /> Clean Code Structure
+                <div className="flex items-center gap-3 text-xs font-black text-text-secondary uppercase tracking-widest">
+                  <Check className="w-4 h-4 text-[var(--accent-primary)]" /> PRISTINE STRUCTURE
                 </div>
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                  <Check className="w-4 h-4 text-green-500" /> No Dependencies
+                <div className="flex items-center gap-3 text-xs font-black text-text-secondary uppercase tracking-widest">
+                  <Check className="w-4 h-4 text-[var(--accent-primary)]" /> ZERO DEPENDENCIES
                 </div>
               </div>
 
               <div className="mb-6">
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 block">Export Format</label>
-                <div className="grid grid-cols-2 gap-2 bg-zinc-100 p-1 rounded-xl">
+                <label className="text-[10px] font-black text-text-secondary/70 uppercase tracking-[0.2em] mb-3 block">EXTRACTION FORMAT</label>
+                <div className="grid grid-cols-2 gap-2 bg-background p-1 rounded-xl border border-border">
                   <button 
                     onClick={() => setExportFormat('html')}
-                    className={`py-2 rounded-lg text-xs font-bold transition-all ${exportFormat === 'html' ? 'bg-white shadow-sm text-blue-600' : 'text-zinc-500 hover:text-zinc-900'}`}
+                    className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${exportFormat === 'html' ? 'bg-surface shadow-sm text-[var(--accent-secondary)] border border-border' : 'text-text-secondary hover:text-text-primary'}`}
                   >
                     HTML/CSS
                   </button>
                   <button 
                     onClick={() => setExportFormat('react')}
-                    className={`py-2 rounded-lg text-xs font-bold transition-all ${exportFormat === 'react' ? 'bg-white shadow-sm text-blue-600' : 'text-zinc-500 hover:text-zinc-900'}`}
+                    className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${exportFormat === 'react' ? 'bg-surface shadow-sm text-[var(--accent-secondary)] border border-border' : 'text-text-secondary hover:text-text-primary'}`}
                   >
-                    React (TSX)
+                    REACT (TSX)
                   </button>
                 </div>
               </div>
 
               {isInIframe && (
-                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-xs text-yellow-800">
-                  <p className="font-bold mb-1">Preview Environment Notice</p>
-                  <p>Downloads may be blocked in this preview. If the download doesn&apos;t start automatically, use the link below or open the app in a new tab.</p>
+                <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-xs text-yellow-500">
+                  <p className="font-black mb-1 uppercase tracking-widest">ENVIRONMENT NOTICE</p>
+                  <p className="font-medium">Extractions may be blocked in this preview. If the download fails, use the link below or open the interface in a new tab.</p>
                 </div>
               )}
 
               {exportError && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800">
-                  <p className="font-bold mb-1">Error</p>
-                  <p>{exportError}</p>
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500">
+                  <p className="font-black mb-1 uppercase tracking-widest">SYSTEM ERROR</p>
+                  <p className="font-medium">{exportError}</p>
                 </div>
               )}
 
               <button 
                 onClick={handleExport}
                 disabled={isExporting}
-                className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-4"
+                className="w-full bg-surface border border-border text-text-primary py-4 rounded-xl font-black hover:bg-white/5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-4 uppercase tracking-widest"
               >
-                {isExporting ? 'Preparing Export...' : <><Download className="w-5 h-5" /> Generate ZIP</>}
+                {isExporting ? 'COMPILING MATRIX...' : <><Download className="w-5 h-5" /> GENERATE ARCHIVE</>}
               </button>
 
               {downloadUrl && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-green-50 border border-green-200 rounded-xl flex flex-col items-center justify-center text-center gap-3"
+                  className="p-4 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 rounded-xl flex flex-col items-center justify-center text-center gap-3"
                 >
-                  <div className="text-sm font-bold text-green-800">Export Ready!</div>
+                  <div className="text-sm font-black text-[var(--accent-secondary)] uppercase tracking-widest">EXTRACTION READY</div>
                   <a 
                     href={downloadUrl} 
                     download={downloadName}
-                    className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-all shadow-sm"
+                    className="bg-[var(--accent-secondary)] text-white px-6 py-2 rounded-lg font-black text-xs hover:opacity-90 transition-all shadow-sm uppercase tracking-widest"
                   >
-                    Click Here to Download
+                    DOWNLOAD ARCHIVE
                   </a>
                 </motion.div>
               )}
@@ -215,24 +220,24 @@ export default function PublishPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl border border-zinc-200 p-8 md:col-span-2"
+              className="bg-surface/50 backdrop-blur-xl rounded-3xl border border-border p-8 md:col-span-2 shadow-2xl shadow-black/20"
             >
               <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 flex-shrink-0">
-                  <LinkIcon className="w-8 h-8" />
+                <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center text-[var(--accent-primary)] flex-shrink-0 border border-border">
+                  <Hexagon className="w-8 h-8" />
                 </div>
                 <div className="flex-grow">
-                  <h2 className="text-xl font-bold text-zinc-900 mb-2">Connect Custom Domain</h2>
-                  <p className="text-zinc-500 text-sm mb-0">
-                    Use your own domain name (e.g., www.yourstartup.com) to give your site a professional look. 
-                    Available on Pro and Team plans.
+                  <h2 className="text-xl font-black text-text-primary mb-2 uppercase tracking-wide">ESTABLISH CUSTOM VECTOR</h2>
+                  <p className="text-text-secondary text-sm mb-0 font-medium">
+                    Route through your own domain name (e.g., www.yourconstruct.com) for a professional presence. 
+                    Available on RESONANCE and NEXUS tiers.
                   </p>
                 </div>
                 <Link 
                   href="/pricing"
-                  className="bg-blue-50 text-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-blue-100 transition-all flex items-center gap-2 whitespace-nowrap"
+                  className="bg-background text-text-primary px-8 py-4 rounded-xl font-black hover:bg-white/5 border border-border transition-all flex items-center gap-2 whitespace-nowrap uppercase tracking-widest text-sm"
                 >
-                  Upgrade to Connect <ArrowRight className="w-5 h-5" />
+                  UPGRADE TO ROUTE <ArrowRight className="w-5 h-5" />
                 </Link>
               </div>
             </motion.div>
@@ -240,25 +245,25 @@ export default function PublishPage() {
 
           {/* Infrastructure Info */}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-4 p-4 bg-zinc-100/50 rounded-2xl border border-zinc-100">
-              <Zap className="w-5 h-5 text-yellow-600" />
+            <div className="flex items-center gap-4 p-4 bg-surface/50 backdrop-blur-xl rounded-2xl border border-border hover:border-[var(--accent-primary)]/30 transition-colors">
+              <Hexagon className="w-5 h-5 text-[var(--accent-primary)]" />
               <div className="text-xs">
-                <p className="font-bold text-zinc-900">Global CDN</p>
-                <p className="text-zinc-500">Lightning fast loading</p>
+                <p className="font-black text-text-primary uppercase tracking-widest">GLOBAL CDN</p>
+                <p className="text-text-secondary font-medium">Instantaneous propagation</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-4 bg-zinc-100/50 rounded-2xl border border-zinc-100">
-              <Shield className="w-5 h-5 text-green-600" />
+            <div className="flex items-center gap-4 p-4 bg-surface/50 backdrop-blur-xl rounded-2xl border border-border hover:border-[var(--accent-secondary)]/30 transition-colors">
+              <Shield className="w-5 h-5 text-[var(--accent-secondary)]" />
               <div className="text-xs">
-                <p className="font-bold text-zinc-900">Free SSL</p>
-                <p className="text-zinc-500">Secure by default</p>
+                <p className="font-black text-text-primary uppercase tracking-widest">ENCRYPTED</p>
+                <p className="text-text-secondary font-medium">Secure by default</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-4 bg-zinc-100/50 rounded-2xl border border-zinc-100">
-              <Server className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center gap-4 p-4 bg-surface/50 backdrop-blur-xl rounded-2xl border border-border hover:border-white/20 transition-colors">
+              <Server className="w-5 h-5 text-text-primary" />
               <div className="text-xs">
-                <p className="font-bold text-zinc-900">99.9% Uptime</p>
-                <p className="text-zinc-500">Reliable hosting</p>
+                <p className="font-black text-text-primary uppercase tracking-widest">99.9% UPTIME</p>
+                <p className="text-text-secondary font-medium">Unwavering stability</p>
               </div>
             </div>
           </div>
