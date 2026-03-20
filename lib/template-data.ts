@@ -6,7 +6,7 @@ export const STARTUP_TEMPLATE: ElementInstance[] = [
     id: uuidv4(),
     type: 'navbar',
     props: {
-      logoText: 'ETHEREAL',
+      logoText: 'NEXUS',
       links: []
     },
     styles: {
@@ -48,7 +48,7 @@ export const STARTUP_TEMPLATE: ElementInstance[] = [
     id: uuidv4(),
     type: 'footer',
     props: {
-      text: '© 2026 ETHEREAL Startup. All rights reserved.'
+      text: '© 2026 NEXUS Startup. All rights reserved.'
     },
     styles: {
       padding: '40px 0',

@@ -103,9 +103,9 @@ export default function PublishPage() {
               <div className="w-12 h-12 bg-background rounded-xl flex items-center justify-center text-[var(--accent-primary)] mb-6 border border-border group-hover:border-[var(--accent-primary)]/50 transition-colors">
                 <Globe className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-black text-text-primary mb-2 uppercase tracking-wide">BROADCAST TO ETHEREAL</h2>
+              <h2 className="text-xl font-black text-text-primary mb-2 uppercase tracking-wide">BROADCAST TO NEXUS</h2>
               <p className="text-text-secondary text-sm mb-8 flex-grow font-medium">
-                Establish an instant uplink on a free Ethereal subdomain. 
+                Establish an instant uplink on a free Nexus subdomain. 
                 Includes encrypted transmission and global node distribution.
               </p>
               

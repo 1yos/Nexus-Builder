@@ -950,7 +950,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                     />
                   </div>
                 ) : (
-                  <div className="font-bold text-xl">{element.props.logoText || 'ETHEREAL'}</div>
+                  <div className="font-bold text-xl">{element.props.logoText || 'NEXUS'}</div>
                 )}
               </div>
 

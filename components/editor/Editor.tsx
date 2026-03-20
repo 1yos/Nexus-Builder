@@ -147,7 +147,7 @@ export default function Editor() {
               <span>{elements.length} Elements</span>
             </div>
             <div className="flex items-center gap-4">
-              <span>ETHEREAL v1.0.0</span>
+              <span>NEXUS v1.0.0</span>
             </div>
           </div>
         )}
