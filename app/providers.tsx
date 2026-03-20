@@ -65,9 +65,11 @@ function PageTransition({ children }: { children: React.ReactNode }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isBuilder = pathname === '/builder';
   return (
     <>
-      <CustomCursor />
+      {!isBuilder && <CustomCursor />}
       <PageTransition>
         {children}
       </PageTransition>

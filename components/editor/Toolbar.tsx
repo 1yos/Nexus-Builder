@@ -14,6 +14,8 @@ import {
   Eye
 } from 'lucide-react';
 
+import NexusLogo from '../marketing/NexusLogo';
+
 import PageSelector from './PageSelector';
 
 import { useRouter } from 'next/navigation';
@@ -39,10 +41,8 @@ export default function Toolbar() {
     <header className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 z-50">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-accent-primary rounded-lg flex items-center justify-center">
-            <span className="text-white font-black text-lg">N</span>
-          </div>
-          <span className="font-bold text-zinc-200 tracking-tight">ETHEREAL Builder</span>
+          <NexusLogo className="w-8 h-8" />
+          <span className="font-bold text-zinc-200 tracking-tight">NEXUS</span>
         </div>
 
         {!isPreview && (
