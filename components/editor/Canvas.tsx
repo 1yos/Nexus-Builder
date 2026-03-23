@@ -934,13 +934,22 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
           : dynamicLinks;
 
         return (
-          <motion.nav key={animKey || element.id} {...commonProps} {...animProps} className={cn(commonProps.className, "relative")}>
+          <motion.nav 
+            key={animKey || element.id} 
+            {...commonProps} 
+            {...animProps} 
+            className={cn(commonProps.className, "relative w-full")}
+            style={{
+              ...style,
+              display: 'flex',
+            }}
+          >
             {badge}
             {actionButtons}
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[64px]">
+              <div className="flex items-center flex-shrink-0">
                 {element.props.logoType === 'image' && element.props.logoSrc ? (
-                  <div className="relative h-8 w-32">
+                  <div className="relative h-8 w-40">
                     <NextImage 
                       src={element.props.logoSrc} 
                       alt="Logo" 
@@ -950,26 +959,28 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                     />
                   </div>
                 ) : (
-                  <div className="font-bold text-xl">{element.props.logoText || 'NEXUS'}</div>
+                  <div className="font-bold text-xl tracking-tight">{element.props.logoText || 'NEXUS'}</div>
                 )}
               </div>
 
               {showHamburger ? (
-                <button 
-                  className="p-2 hover:bg-black/5 rounded-md transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateElement(element.id, { props: { ...element.props, showMobileMenu: !element.props.showMobileMenu } });
-                  }}
-                >
-                  {element.props.showMobileMenu ? (
-                    <X size={element.props.hamburgerSize || 24} color={element.props.hamburgerColor || '#000'} />
-                  ) : (
-                    <Menu size={element.props.hamburgerSize || 24} color={element.props.hamburgerColor || '#000'} />
-                  )}
-                </button>
+                <div className="flex items-center">
+                  <button 
+                    className="p-2 hover:bg-black/5 rounded-md transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateElement(element.id, { props: { ...element.props, showMobileMenu: !element.props.showMobileMenu } });
+                    }}
+                  >
+                    {element.props.showMobileMenu ? (
+                      <X size={element.props.hamburgerSize || 24} color={element.props.hamburgerColor || '#000'} />
+                    ) : (
+                      <Menu size={element.props.hamburgerSize || 24} color={element.props.hamburgerColor || '#000'} />
+                    )}
+                  </button>
+                </div>
               ) : (
-                <div className="flex gap-6">
+                <div className="hidden md:flex items-center gap-8">
                   {groupedLinks.map((item: any, idx: number) => {
                     if (item.type === 'folder') {
                       const isOpen = openDropdownId === item.id;
@@ -996,13 +1007,13 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                 transition={{ duration: 0.15, ease: "easeOut" }}
-                                className="absolute top-full right-0 mt-2 w-56 bg-white/95 backdrop-blur-md border border-zinc-200 rounded-xl shadow-2xl z-[100] py-2 overflow-hidden"
+                                className="absolute top-full right-0 mt-2 w-56 bg-white/95 backdrop-blur-md border border-zinc-200 rounded-xl shadow-2xl z-[110] py-2 overflow-hidden"
                               >
                                 {item.pages.map((page: any, pIdx: number) => (
                                   <a 
                                     key={page.id || `page-${pIdx}`} 
                                     href={page.id}
-                                    className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-accent-primary hover:text-accent-primary transition-colors"
+                                    className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-accent-primary/10 hover:text-accent-primary transition-colors"
                                     onClick={(e) => {
                                       handleLinkClick(e, page.id, 'internal');
                                       setOpenDropdownId(null);
@@ -1023,7 +1034,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                         key={`nav-item-${itemId}`} 
                         href={item.href}
                         className="text-sm font-medium hover:text-accent-primary cursor-pointer transition-colors"
-                        onClick={(e) => handleLinkClick(e, item.href, 'internal')}
+                        onClick={(e) => handleLinkClick(e, item.href, item.type || 'internal')}
                       >
                         {item.name}
                       </a>
@@ -1037,56 +1048,58 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
             <AnimatePresence>
               {showHamburger && element.props.showMobileMenu && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 right-0 bg-white border-b border-zinc-200 p-4 shadow-xl z-[100] flex flex-col gap-2"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="absolute top-full left-0 right-0 bg-white border-b border-zinc-200 shadow-xl z-[100] overflow-hidden"
                   style={{ 
                     backgroundColor: style.backgroundColor,
                     color: style.color 
                   }}
                 >
-                  {groupedLinks.map((item: any, idx: number) => {
-                    if (item.type === 'folder') {
-                      const itemId = item.id || `folder-${idx}`;
+                  <div className="p-4 flex flex-col gap-2">
+                    {groupedLinks.map((item: any, idx: number) => {
+                      if (item.type === 'folder') {
+                        const itemId = item.id || `folder-${idx}`;
+                        return (
+                          <div key={`nav-mobile-folder-${itemId}`} className="flex flex-col gap-1">
+                            <div key="folder-title" className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-4 py-2">
+                              {item.name}
+                            </div>
+                            <div key="folder-pages" className="flex flex-col gap-1">
+                              {item.pages.map((page: any, pIdx: number) => (
+                                <a 
+                                  key={page.id || `mobile-page-${pIdx}`} 
+                                  href={page.id}
+                                  className="text-base font-medium hover:text-accent-primary cursor-pointer py-3 px-8 rounded-lg hover:bg-black/5 transition-colors"
+                                  onClick={(e) => {
+                                    handleLinkClick(e, page.id, 'internal');
+                                    updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
+                                  }}
+                                >
+                                  {page.name}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      const itemId = item.id || `page-${idx}`;
                       return (
-                        <div key={`nav-mobile-folder-${itemId}`} className="flex flex-col gap-1">
-                          <div key="folder-title" className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-4 py-2">
-                            {item.name}
-                          </div>
-                          <div key="folder-pages" className="flex flex-col gap-1">
-                            {item.pages.map((page: any, pIdx: number) => (
-                              <a 
-                                key={page.id || `mobile-page-${pIdx}`} 
-                                href={page.id}
-                                className="text-base font-medium hover:text-accent-primary cursor-pointer py-3 px-8 rounded-lg hover:bg-black/5 transition-colors"
-                                onClick={(e) => {
-                                  handleLinkClick(e, page.id, 'internal');
-                                  updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
-                                }}
-                              >
-                                {page.name}
-                              </a>
-                            ))}
-                          </div>
-                        </div>
+                        <a 
+                          key={`nav-mobile-item-${itemId}`} 
+                          href={item.href}
+                          className="text-base font-medium hover:text-accent-primary cursor-pointer py-3 px-4 rounded-lg hover:bg-black/5 transition-colors"
+                          onClick={(e) => {
+                            handleLinkClick(e, item.href, item.type || 'internal');
+                            updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
+                          }}
+                        >
+                          {item.name}
+                        </a>
                       );
-                    }
-                    const itemId = item.id || `page-${idx}`;
-                    return (
-                      <a 
-                        key={`nav-mobile-item-${itemId}`} 
-                        href={item.href}
-                        className="text-base font-medium hover:text-accent-primary cursor-pointer py-3 px-4 rounded-lg hover:bg-black/5 transition-colors"
-                        onClick={(e) => {
-                          handleLinkClick(e, item.href, 'internal');
-                          updateElement(element.id, { props: { ...element.props, showMobileMenu: false } });
-                        }}
-                      >
-                        {item.name}
-                      </a>
-                    );
-                  })}
+                    })}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

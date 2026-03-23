@@ -14,7 +14,7 @@ export default function PublishPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'html' | 'react'>('html');
+  const [exportFormat, setExportFormat] = useState<'html' | 'react' | 'nextjs'>('html');
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>('');
   const [isInIframe, setIsInIframe] = useState(false);
@@ -56,7 +56,7 @@ export default function PublishPage() {
       const blob = await zip.generateAsync({ type: 'blob' });
       
       const url = URL.createObjectURL(blob);
-      const filename = `ethereal-construct-${exportFormat}-export.zip`;
+      const filename = `nexus-${exportFormat}-export.zip`;
       
       setDownloadUrl(url);
       setDownloadName(filename);
@@ -112,7 +112,7 @@ export default function PublishPage() {
               <div className="bg-background p-4 rounded-xl mb-8 border border-border">
                 <div className="flex items-center gap-2 text-sm font-black text-text-secondary uppercase tracking-widest">
                   <div className="text-text-secondary/70">VECTOR:</div>
-                  <div className="text-[var(--accent-primary)]">alpha-construct.ethereal.network</div>
+                  <div className="text-[var(--accent-primary)]">alpha-construct.nexus.network (MOCK)</div>
                 </div>
               </div>
 
@@ -170,7 +170,13 @@ export default function PublishPage() {
                     onClick={() => setExportFormat('react')}
                     className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${exportFormat === 'react' ? 'bg-surface shadow-sm text-[var(--accent-secondary)] border border-border' : 'text-text-secondary hover:text-text-primary'}`}
                   >
-                    REACT (TSX)
+                    REACT (VITE)
+                  </button>
+                  <button 
+                    onClick={() => setExportFormat('nextjs')}
+                    className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${exportFormat === 'nextjs' ? 'bg-surface shadow-sm text-[var(--accent-secondary)] border border-border' : 'text-text-secondary hover:text-text-primary'} col-span-2`}
+                  >
+                    NEXT.JS (APP ROUTER)
                   </button>
                 </div>
               </div>

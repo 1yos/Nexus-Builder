@@ -534,7 +534,7 @@ export default function RightPanel() {
                                 }}
                                 className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-[9px] text-zinc-200"
                               >
-                                <option value="/">Home</option>
+                                <option value="">Select a page...</option>
                                 {pages.map(p => (
                                   <option key={p.id} value={p.id}>{p.name}</option>
                                 ))}
