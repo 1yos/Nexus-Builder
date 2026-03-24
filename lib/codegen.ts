@@ -405,7 +405,15 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
     if (framework === 'nextjs') {
       const tailwindClasses = stylesToTailwind(el.styles || {});
       if (tailwindClasses) {
-        styleProp = ` className="${tailwindClasses}"`;
+        // For navbar, ensure it's block to contain the flex child and mobile menu properly
+        if (el.type === 'navbar') {
+          const navClasses = tailwindClasses.replace(/\bflex\b|\bjustify-[a-z]+\b|\bitems-[a-z]+\b/g, '').trim();
+          styleProp = ` className="relative block w-full z-[100] ${navClasses}"`;
+        } else {
+          styleProp = ` className="${tailwindClasses}"`;
+        }
+      } else if (el.type === 'navbar') {
+        styleProp = ` className="relative block w-full z-[100]"`;
       }
     } else {
       const styleObj = JSON.stringify(el.styles || {}, null, 2)
@@ -413,7 +421,18 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
         .split('\n')
         .map((line, i) => i === 0 ? line : spaces + '    ' + line)
         .join('\n');
-      styleProp = ` style={${styleObj}}`;
+      
+      if (el.type === 'navbar') {
+        // Override display to block for navbar
+        const modifiedStyleObj = styleObj.replace(/display:\s*'[^']+',?/, "display: 'block',");
+        if (modifiedStyleObj === '{}') {
+          styleProp = ` style={{ position: 'relative', width: '100%', display: 'block' }}`;
+        } else {
+          styleProp = ` style={{ position: 'relative', width: '100%', display: 'block', ...${modifiedStyleObj} }}`;
+        }
+      } else {
+        styleProp = ` style={${styleObj}}`;
+      }
     }
     
     let children = el.children?.length 
@@ -460,7 +479,7 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
             `<div className="relative group">`,
             `  <button className="flex items-center gap-1 text-sm font-medium hover:text-blue-600 transition-colors">`,
             `    {${JSON.stringify(item.name)}}`,
-            `    <Icons.ChevronDown className="w-3 h-3 group-hover:rotate-180 transition-transform" />`,
+            `    {React.createElement((Icons as any).ChevronDown, { className: "w-3 h-3 group-hover:rotate-180 transition-transform" })}`,
             `  </button>`,
             `  <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[110] py-2">`,
             ...item.pages.map((p: any) => 
@@ -498,9 +517,9 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
       
       const hSize = parseInt(String(el.props.hamburgerSize)) || 24;
       const hColor = el.props.hamburgerColor || '#000';
-      const showHamburger = el.props.mobileMenuType === 'hamburger';
+      const showHamburger = el.props.mobileMenuType === 'hamburger' || el.props.mobileMenuType === undefined;
 
-      children = `\n${spaces}  <div ${containerProps}>\n${spaces}    <div className="flex items-center flex-shrink-0">\n${spaces}      ${logo}\n${spaces}    </div>\n${spaces}    <div ${linksContainerProps}>\n${spaces}      ${desktopLinks}\n${spaces}    </div>\n${spaces}    ${showHamburger ? `<div className="md:hidden flex items-center">\n${spaces}      <button className="p-2 hover:bg-black/5 rounded-md transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>\n${spaces}        {isMobileMenuOpen ? <Icons.X size={${hSize}} color="${hColor}" /> : <Icons.Menu size={${hSize}} color="${hColor}" />}\n${spaces}      </button>\n${spaces}    </div>` : ''}\n${spaces}  </div>\n${spaces}  ${showHamburger ? `<AnimatePresence>\n${spaces}    {isMobileMenuOpen && (\n${spaces}      <motion.div \n${spaces}        initial={{ opacity: 0, height: 0 }} \n${spaces}        animate={{ opacity: 1, height: 'auto' }} \n${spaces}        exit={{ opacity: 0, height: 0 }}\n${spaces}        className="md:hidden border-t border-gray-100 overflow-hidden shadow-xl"\n${spaces}        style={{ backgroundColor: ${JSON.stringify(el.styles.backgroundColor || '#ffffff')}, color: ${JSON.stringify(el.styles.color || '#000000')} }}\n${spaces}      >\n${spaces}        <div className="p-4 flex flex-col gap-2">\n${spaces}          ${mobileLinks}\n${spaces}        </div>\n${spaces}      </motion.div>\n${spaces}    )}\n${spaces}  </AnimatePresence>` : ''}\n${spaces}`;
+      children = `\n${spaces}  <div ${containerProps}>\n${spaces}    <div className="flex items-center flex-shrink-0">\n${spaces}      ${logo}\n${spaces}    </div>\n${spaces}    <div ${linksContainerProps}>\n${spaces}      ${desktopLinks}\n${spaces}    </div>\n${spaces}    ${showHamburger ? `<div className="md:hidden flex items-center">\n${spaces}      <button className="p-2 hover:bg-black/5 rounded-md transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>\n${spaces}        {isMobileMenuOpen ? React.createElement((Icons as any).X, { size: ${hSize}, color: "${hColor}" }) : React.createElement((Icons as any).Menu, { size: ${hSize}, color: "${hColor}" })}\n${spaces}      </button>\n${spaces}    </div>` : ''}\n${spaces}  </div>\n${spaces}  ${showHamburger ? `<AnimatePresence>\n${spaces}    {isMobileMenuOpen && (\n${spaces}      <motion.div \n${spaces}        initial={{ opacity: 0, height: 0 }} \n${spaces}        animate={{ opacity: 1, height: 'auto' }} \n${spaces}        exit={{ opacity: 0, height: 0 }}\n${spaces}        className="md:hidden absolute top-full left-0 w-full border-t border-gray-100 overflow-hidden shadow-xl"\n${spaces}        style={{ backgroundColor: ${JSON.stringify(el.styles.backgroundColor || '#ffffff')}, color: ${JSON.stringify(el.styles.color || '#000000')} }}\n${spaces}      >\n${spaces}        <div className="p-4 flex flex-col gap-2">\n${spaces}          ${mobileLinks}\n${spaces}        </div>\n${spaces}      </motion.div>\n${spaces}    )}\n${spaces}  </AnimatePresence>` : ''}\n${spaces}`;
     } else if (el.type === 'footer') {
       children = `\n${spaces}  <div>{${JSON.stringify(el.props.copyright || '')}}</div>\n${spaces}`;
     } else if (el.type === 'icon') {
@@ -543,9 +562,9 @@ export default function ${componentName}() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   return (
-    <>
+    <React.Fragment>
 ${elements.map(el => renderElement(el, 6)).join('\n')}
-    </>
+    </React.Fragment>
   );
 }`;
   }
@@ -627,7 +646,8 @@ export function generateSiteCode(pages: Page[], folders: Folder[], format: 'html
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-router-dom": "^6.14.2",
-        "lucide-react": "^0.284.0"
+        "lucide-react": "^0.284.0",
+        "framer-motion": "^11.0.8"
       },
       devDependencies: {
         "@types/react": "^18.2.15",
@@ -805,6 +825,7 @@ module.exports = nextConfig;`;
 module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {},
