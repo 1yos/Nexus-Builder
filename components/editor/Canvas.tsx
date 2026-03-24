@@ -575,10 +575,10 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     >
       <span className={cn(
         "text-[9px] font-bold px-2 py-0.5 rounded-t-sm uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-accent-primary/20",
-        element.isMaster ? "bg-amber-600" : element.isSlot ? "bg-emerald-600" : "bg-accent-primary"
+        element.isGlobal ? "bg-purple-600" : element.isMaster ? "bg-amber-600" : element.isSlot ? "bg-emerald-600" : "bg-accent-primary"
       )}>
         <Move className="w-2.5 h-2.5" />
-        {element.isMaster ? `Master: ${element.type}` : element.isSlot ? `Slot: ${element.type}` : element.type}
+        {element.isGlobal ? `Global: ${element.type}` : element.isMaster ? `Master: ${element.type}` : element.isSlot ? `Slot: ${element.type}` : element.type}
       </span>
       {element.locked && <Lock className="w-2.5 h-2.5 text-zinc-400" />}
     </div>

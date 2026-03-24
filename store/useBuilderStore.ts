@@ -197,8 +197,10 @@ interface BuilderState {
   reorderItems: (activeId: string, overId: string) => void;
 
   // Global Components
-  convertToGlobal: (id: string) => void;
+  convertToGlobal: (id: string, name?: string) => void;
   updateGlobalComponent: (globalId: string, updates: Partial<ElementInstance>) => void;
+  renameGlobalComponent: (globalId: string, name: string) => void;
+  deleteGlobalComponent: (globalId: string) => void;
   
   // Tokens
   addToken: (token: DesignToken) => void;
@@ -303,21 +305,73 @@ export const useBuilderStore = create<BuilderState>()(
       },
 
       updateElement: (id, updates) => {
-        const { elements, pages, activePageId } = get();
-        const updateItems = (items: ElementInstance[]): ElementInstance[] => {
-          return items.map((item) => {
+        const { elements, pages, activePageId, globalComponents } = get();
+        
+        let foundGlobalId: string | null = null;
+        let updatedMaster: ElementInstance | null = null;
+
+        const updateItems = (items: ElementInstance[], currentGlobalId: string | null): ElementInstance[] => {
+          let changed = false;
+          const newItems = items.map((item) => {
+            const nextGlobalId = item.isGlobal ? item.globalId! : currentGlobalId;
+            
             if (item.id === id) {
-              return { ...item, ...updates };
+              changed = true;
+              const updatedItem = { ...item, ...updates };
+              if (nextGlobalId) {
+                foundGlobalId = nextGlobalId;
+                if (item.isGlobal && item.globalId === foundGlobalId) {
+                  updatedMaster = updatedItem;
+                }
+              }
+              return updatedItem;
             }
             if (item.children) {
-              return { ...item, children: updateItems(item.children) };
+              const newChildren = updateItems(item.children, nextGlobalId);
+              if (newChildren !== item.children) {
+                changed = true;
+                const updatedItem = { ...item, children: newChildren };
+                if (item.isGlobal && item.globalId === foundGlobalId) {
+                  updatedMaster = updatedItem;
+                }
+                return updatedItem;
+              }
             }
             return item;
           });
+          return changed ? newItems : items;
         };
-        const newElements = updateItems(elements);
-        const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: newElements } : p);
-        set({ elements: newElements, pages: newPages });
+        
+        const newElements = updateItems(elements, null);
+        
+        if (foundGlobalId && updatedMaster) {
+          // Update the master component
+          const newGlobalComponents = { ...globalComponents, [foundGlobalId]: updatedMaster };
+          
+          // Sync all instances across all pages
+          const syncInstances = (items: ElementInstance[]): ElementInstance[] => {
+            return items.map(item => {
+              if (item.isGlobal && item.globalId === foundGlobalId) {
+                return { ...item, children: updatedMaster!.children, styles: updatedMaster!.styles, props: updatedMaster!.props };
+              }
+              if (item.children) {
+                return { ...item, children: syncInstances(item.children) };
+              }
+              return item;
+            });
+          };
+          
+          const newPages = pages.map(page => ({
+            ...page,
+            elements: syncInstances(page.id === activePageId ? newElements : page.elements)
+          }));
+          
+          set({ elements: newPages.find(p => p.id === activePageId)!.elements, pages: newPages, globalComponents: newGlobalComponents });
+        } else {
+          const newPages = pages.map(p => p.id === activePageId ? { ...p, elements: newElements } : p);
+          set({ elements: newElements, pages: newPages });
+        }
+        
         get().saveToHistory();
       },
 
@@ -580,7 +634,7 @@ export const useBuilderStore = create<BuilderState>()(
       showEmptySlots: true,
       setShowEmptySlots: (show) => set({ showEmptySlots: show }),
 
-      convertToGlobal: (id) => {
+      convertToGlobal: (id, name) => {
         const { elements, globalComponents } = get();
         const findElement = (items: ElementInstance[]): ElementInstance | undefined => {
           for (const item of items) {
@@ -597,6 +651,7 @@ export const useBuilderStore = create<BuilderState>()(
           const master = JSON.parse(JSON.stringify(element)) as ElementInstance;
           master.isMaster = true;
           master.globalId = globalId;
+          master.name = name || element.name || `Global ${element.type}`;
           
           const newGlobalComponents = { ...globalComponents, [globalId]: master };
           
@@ -618,6 +673,48 @@ export const useBuilderStore = create<BuilderState>()(
           set({ globalComponents: newGlobalComponents, elements: newElements, pages: newPages });
           get().saveToHistory();
         }
+      },
+
+      renameGlobalComponent: (globalId, name) => {
+        const { globalComponents } = get();
+        if (!globalComponents[globalId]) return;
+        
+        const newGlobalComponents = {
+          ...globalComponents,
+          [globalId]: { ...globalComponents[globalId], name }
+        };
+        
+        set({ globalComponents: newGlobalComponents });
+        get().saveToHistory();
+      },
+
+      deleteGlobalComponent: (globalId) => {
+        const { globalComponents, pages } = get();
+        
+        // Check if it's in use
+        let inUse = false;
+        const checkUsage = (items: ElementInstance[]) => {
+          for (const item of items) {
+            if (item.isGlobal && item.globalId === globalId) {
+              inUse = true;
+              return;
+            }
+            if (item.children) checkUsage(item.children);
+          }
+        };
+        
+        pages.forEach(p => checkUsage(p.elements));
+        
+        if (inUse) {
+          alert('Cannot delete this component because it is currently in use on one or more pages. Please remove all instances first.');
+          return;
+        }
+        
+        const newGlobalComponents = { ...globalComponents };
+        delete newGlobalComponents[globalId];
+        
+        set({ globalComponents: newGlobalComponents });
+        get().saveToHistory();
       },
 
       updateGlobalComponent: (globalId, updates) => {

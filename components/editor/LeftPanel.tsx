@@ -5,7 +5,7 @@ import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2 } from 'lucide-react';
+import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
 
@@ -117,6 +117,7 @@ export default function LeftPanel() {
 
 function ComponentsTab() {
   const [search, setSearch] = React.useState('');
+  const { globalComponents } = useBuilderStore();
 
   return (
     <>
@@ -133,11 +134,101 @@ function ComponentsTab() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+        {Object.keys(globalComponents).length > 0 && (
+          <GlobalComponentGroup search={search} />
+        )}
         <ComponentGroup title="Layout" types={['section', 'container', 'grid', 'flex']} search={search} />
         <ComponentGroup title="Basic" types={['heading', 'paragraph', 'button', 'image', 'icon', 'divider', 'spacer']} search={search} />
         <ComponentGroup title="Advanced" types={['navbar', 'hero', 'card', 'pricing', 'features', 'footer']} search={search} />
       </div>
     </>
+  );
+}
+
+function GlobalComponentGroup({ search }: { search: string }) {
+  const { globalComponents } = useBuilderStore();
+  
+  const filteredComponents = Object.entries(globalComponents).filter(([id, component]) => 
+    (component.name || `Global ${component.type}`).toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (filteredComponents.length === 0) return null;
+
+  return (
+    <div>
+      <h3 className="text-[10px] font-bold text-accent-primary uppercase mb-3 px-1 tracking-wider flex items-center gap-1">
+        <Globe className="w-3 h-3" />
+        Saved Components
+      </h3>
+      <div className="grid grid-cols-2 gap-2">
+        {filteredComponents.map(([id, component]) => (
+          <DraggableGlobalComponent key={id} id={id} component={component} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DraggableGlobalComponent({ id, component }: { id: string, component: ElementInstance }) {
+  const { renameGlobalComponent, deleteGlobalComponent } = useBuilderStore();
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `global-${id}`,
+    data: {
+      type: component.type,
+      isGlobal: true,
+      globalId: id,
+      isLibraryItem: true,
+    },
+  });
+
+  const Icon = COMPONENT_REGISTRY[component.type as keyof typeof COMPONENT_REGISTRY]?.icon as LucideIcon || Box;
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "flex flex-col p-2 rounded-xl border border-accent-primary/30 bg-accent-primary/5",
+        "hover:bg-accent-primary/10 hover:border-accent-primary/50 transition-all cursor-grab active:cursor-grabbing group relative",
+        isDragging && "opacity-50 ring-2 ring-accent-primary"
+      )}
+    >
+      <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const newName = prompt('Rename component:', component.name || `Global ${component.type}`);
+            if (newName) renameGlobalComponent(id, newName);
+          }}
+          className="p-1 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white"
+          title="Rename"
+        >
+          <CodeIcon className="w-3 h-3" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm('Are you sure you want to delete this component?')) {
+              deleteGlobalComponent(id);
+            }
+          }}
+          className="p-1 bg-zinc-800 hover:bg-red-500/20 rounded text-zinc-400 hover:text-red-400"
+          title="Delete"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
+      <div className="mb-2 overflow-hidden rounded-lg bg-zinc-950/50 group-hover:bg-zinc-950 transition-colors h-12 flex items-center justify-center">
+        <Icon className="w-6 h-6 text-accent-primary/50" />
+      </div>
+      <div className="flex items-center gap-2 px-1">
+        <Globe className="w-3 h-3 text-accent-primary group-hover:text-accent-primary transition-colors shrink-0" />
+        <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-wider group-hover:text-white transition-colors truncate">
+          {component.name || `Global ${component.type}`}
+        </span>
+      </div>
+    </div>
   );
 }
 

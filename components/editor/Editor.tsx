@@ -64,35 +64,56 @@ export default function Editor() {
 
     const type = active.data.current?.type as ComponentType;
     const isLibraryItem = active.data.current?.isLibraryItem;
+    const isGlobal = active.data.current?.isGlobal;
+    const globalId = active.data.current?.globalId;
     const overId = over.id as string;
     const overData = over.data.current;
 
     if (isLibraryItem && type) {
-      const definition = COMPONENT_REGISTRY[type];
-      
-      const createInstance = (def: any): ElementInstance => {
-        const instance: ElementInstance = {
+      let newElement: ElementInstance;
+
+      if (isGlobal && globalId) {
+        // Create an instance of a global component
+        const { globalComponents } = useBuilderStore.getState();
+        const master = globalComponents[globalId];
+        if (!master) return;
+
+        newElement = {
           id: uuidv4(),
-          type: def.type,
-          props: { ...def.props },
-          styles: { ...def.styles },
-          children: def.children || (COMPONENT_REGISTRY[def.type as ComponentType]?.isContainer ? [] : undefined),
+          type: master.type,
+          props: { ...master.props },
+          styles: { ...master.styles },
+          children: master.children ? JSON.parse(JSON.stringify(master.children)) : undefined,
+          isGlobal: true,
+          globalId: globalId,
+        };
+      } else {
+        const definition = COMPONENT_REGISTRY[type];
+        
+        const createInstance = (def: any): ElementInstance => {
+          const instance: ElementInstance = {
+            id: uuidv4(),
+            type: def.type,
+            props: { ...def.props },
+            styles: { ...def.styles },
+            children: def.children || (COMPONENT_REGISTRY[def.type as ComponentType]?.isContainer ? [] : undefined),
+          };
+
+          if (def.children) {
+            instance.children = def.children.map((child: any) => createInstance(child));
+          } else if (COMPONENT_REGISTRY[def.type as ComponentType]?.defaultChildren) {
+            instance.children = COMPONENT_REGISTRY[def.type as ComponentType]!.defaultChildren!.map((child: any) => createInstance(child));
+          }
+
+          return instance;
         };
 
-        if (def.children) {
-          instance.children = def.children.map((child: any) => createInstance(child));
-        } else if (COMPONENT_REGISTRY[def.type as ComponentType]?.defaultChildren) {
-          instance.children = COMPONENT_REGISTRY[def.type as ComponentType]!.defaultChildren!.map((child: any) => createInstance(child));
-        }
-
-        return instance;
-      };
-
-      const newElement = createInstance({
-        type,
-        props: definition.defaultProps,
-        styles: definition.defaultStyles,
-      });
+        newElement = createInstance({
+          type,
+          props: definition.defaultProps,
+          styles: definition.defaultStyles,
+        });
+      }
 
       if (overData?.isDropIndicator) {
         addElement(newElement, overData.parentId, overData.index);

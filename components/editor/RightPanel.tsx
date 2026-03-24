@@ -158,13 +158,6 @@ export default function RightPanel() {
 
   const handleStyleChange = (key: string, value: any) => {
     const { deviceMode } = useBuilderStore.getState();
-    
-    if (selectedElement.isGlobal && selectedElement.isMaster) {
-      updateGlobalComponent(selectedElement.globalId!, {
-        styles: { ...selectedElement.styles, [key]: value }
-      });
-      return;
-    }
 
     const styleKey = selectedState === 'default' ? 'styles' : `${selectedState}Styles`;
     
@@ -245,7 +238,12 @@ export default function RightPanel() {
         <div className="flex items-center gap-1">
           {!selectedElement.isGlobal && (
             <button 
-              onClick={() => convertToGlobal(selectedElement.id)}
+              onClick={() => {
+                const name = prompt('Enter a name for this component:', selectedElement.name || `Global ${selectedElement.type}`);
+                if (name) {
+                  convertToGlobal(selectedElement.id, name);
+                }
+              }}
               className="p-1.5 hover:bg-accent-primary/10 text-zinc-500 hover:text-accent-primary rounded-md transition-all"
               title="Convert to Global Component"
             >

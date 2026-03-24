@@ -254,7 +254,7 @@ function stylesToTailwind(styles: Record<string, string>): string {
 /**
  * Generates a React component string for a list of elements.
  */
-export function generateReact(elements: ElementInstance[], pages: Page[], folders: Folder[], componentName = 'GeneratedPage', framework: 'react' | 'nextjs' = 'react', isPage = true, extractedComponents: string[] = []): string {
+export function generateReact(elements: ElementInstance[], pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, componentName = 'GeneratedPage', framework: 'react' | 'nextjs' = 'react', isPage = true, extractedComponents: string[] = []): string {
   const renderElement = (el: any, indent = 2): string => {
     const spaces = ' '.repeat(indent);
     
@@ -338,10 +338,17 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
       return iProps;
     };
 
-    if (el.type === 'navbar' && extractedComponents.includes('Navbar')) {
+    if (el.isGlobal && el.globalId && globalComponents[el.globalId] && !el.isMaster) {
+      const compName = getComponentName(globalComponents[el.globalId].name || `Global ${el.type}`);
+      if (extractedComponents.includes(compName) && componentName !== compName) {
+        return `${spaces}<${compName} />`;
+      }
+    }
+
+    if (el.type === 'navbar' && extractedComponents.includes('Navbar') && componentName !== 'Navbar' && !el.isMaster) {
       return `${spaces}<Navbar />`;
     }
-    if (el.type === 'footer' && extractedComponents.includes('Footer')) {
+    if (el.type === 'footer' && extractedComponents.includes('Footer') && componentName !== 'Footer' && !el.isMaster) {
       return `${spaces}<Footer />`;
     }
 
@@ -547,9 +554,42 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
     ? `className="min-h-screen bg-white text-zinc-900"`
     : `className="min-h-screen" style={{ backgroundColor: '#ffffff', color: '#18181b' }}`;
 
-  const componentImports = extractedComponents.map(c => 
-    framework === 'nextjs' ? `import ${c} from '@/components/${c}';` : `import ${c} from '../components/${c}';`
-  ).join('\n');
+  // Find which components are actually used in this file
+  const usedComponents = new Set<string>();
+  
+  const findUsedComponents = (els: any[], isRoot = false) => {
+    for (const el of els) {
+      if (!isRoot) {
+        if (el.isGlobal && el.globalId && globalComponents[el.globalId] && !el.isMaster) {
+          const compName = getComponentName(globalComponents[el.globalId].name || `Global ${el.type}`);
+          usedComponents.add(compName);
+          continue; // Don't traverse children of global components
+        } else if (el.type === 'navbar' && !el.isMaster) {
+          usedComponents.add('Navbar');
+          continue;
+        } else if (el.type === 'footer' && !el.isMaster) {
+          usedComponents.add('Footer');
+          continue;
+        }
+      }
+      
+      if (el.children && el.children.length > 0) {
+        findUsedComponents(el.children, false);
+      }
+    }
+  };
+  
+  findUsedComponents(elements, !isPage);
+
+  const componentImports = extractedComponents
+    .filter(c => c !== componentName && usedComponents.has(c))
+    .map(c => {
+      if (framework === 'nextjs') {
+        return `import ${c} from '@/components/${c}';`;
+      } else {
+        return isPage ? `import ${c} from '../components/${c}';` : `import ${c} from './${c}';`;
+      }
+    }).join('\n');
 
   if (!isPage) {
     return `'use client';
@@ -557,6 +597,7 @@ import React, { useState } from 'react';
 ${linkImport}
 ${motionImport}
 import * as Icons from 'lucide-react';
+${componentImports}
 
 export default function ${componentName}() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -622,7 +663,7 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[]): 
 /**
  * Generates the entire site structure as a record of filenames and content.
  */
-export function generateSiteCode(pages: Page[], folders: Folder[], format: 'html' | 'react' | 'nextjs' = 'html'): Record<string, string> {
+export function generateSiteCode(pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, format: 'html' | 'react' | 'nextjs' = 'html'): Record<string, string> {
   const site: Record<string, string> = {};
   
   if (format === 'html') {
@@ -719,13 +760,39 @@ img { max-width: 100%; height: auto; }`;
     const componentsToExtract = ['navbar', 'footer'];
     const extractedComponents: string[] = [];
     
+    // First populate extractedComponents with global components
+    Object.entries(globalComponents).forEach(([id, comp]) => {
+      const compName = getComponentName(comp.name || `Global ${comp.type}`);
+      if (!extractedComponents.includes(compName)) {
+        extractedComponents.push(compName);
+      }
+    });
+
+    // Also populate with standard extracted components
     for (const page of pages) {
       for (const el of page.elements) {
-        if (componentsToExtract.includes(el.type)) {
+        if (componentsToExtract.includes(el.type) && !el.isGlobal) {
           const compName = el.type === 'navbar' ? 'Navbar' : 'Footer';
           if (!extractedComponents.includes(compName)) {
             extractedComponents.push(compName);
-            site[`src/components/${compName}.tsx`] = generateReact([el], pages, folders, compName, 'react', false);
+          }
+        }
+      }
+    }
+
+    // Now generate global components
+    Object.entries(globalComponents).forEach(([id, comp]) => {
+      const compName = getComponentName(comp.name || `Global ${comp.type}`);
+      site[`src/components/${compName}.tsx`] = generateReact([comp], pages, folders, globalComponents, compName, 'react', false, extractedComponents);
+    });
+
+    // Now generate standard extracted components
+    for (const page of pages) {
+      for (const el of page.elements) {
+        if (componentsToExtract.includes(el.type) && !el.isGlobal) {
+          const compName = el.type === 'navbar' ? 'Navbar' : 'Footer';
+          if (!site[`src/components/${compName}.tsx`]) {
+            site[`src/components/${compName}.tsx`] = generateReact([el], pages, folders, globalComponents, compName, 'react', false, extractedComponents);
           }
         }
       }
@@ -738,7 +805,7 @@ img { max-width: 100%; height: auto; }`;
       const slug = getSlug(page.name);
       const path = isHomePage(page, pages) ? '/' : `/${slug}`;
       const filename = `src/pages/${componentName}.tsx`;
-      site[filename] = generateReact(page.elements, pages, folders, componentName, 'react', true, extractedComponents);
+      site[filename] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'react', true, extractedComponents);
       pageComponents.push({ name: componentName, path, component: componentName });
     });
 
@@ -936,13 +1003,39 @@ export function cn(...inputs: ClassValue[]) {
     const componentsToExtract = ['navbar', 'footer'];
     const extractedComponents: string[] = [];
     
+    // First populate extractedComponents with global components
+    Object.entries(globalComponents).forEach(([id, comp]) => {
+      const compName = getComponentName(comp.name || `Global ${comp.type}`);
+      if (!extractedComponents.includes(compName)) {
+        extractedComponents.push(compName);
+      }
+    });
+
+    // Also populate with standard extracted components
     for (const page of pages) {
       for (const el of page.elements) {
-        if (componentsToExtract.includes(el.type)) {
+        if (componentsToExtract.includes(el.type) && !el.isGlobal) {
           const compName = el.type === 'navbar' ? 'Navbar' : 'Footer';
           if (!extractedComponents.includes(compName)) {
             extractedComponents.push(compName);
-            site[`components/${compName}.tsx`] = generateReact([el], pages, folders, compName, 'nextjs', false);
+          }
+        }
+      }
+    }
+
+    // Now generate global components
+    Object.entries(globalComponents).forEach(([id, comp]) => {
+      const compName = getComponentName(comp.name || `Global ${comp.type}`);
+      site[`components/${compName}.tsx`] = generateReact([comp], pages, folders, globalComponents, compName, 'nextjs', false, extractedComponents);
+    });
+
+    // Now generate standard extracted components
+    for (const page of pages) {
+      for (const el of page.elements) {
+        if (componentsToExtract.includes(el.type) && !el.isGlobal) {
+          const compName = el.type === 'navbar' ? 'Navbar' : 'Footer';
+          if (!site[`components/${compName}.tsx`]) {
+            site[`components/${compName}.tsx`] = generateReact([el], pages, folders, globalComponents, compName, 'nextjs', false, extractedComponents);
           }
         }
       }
@@ -953,7 +1046,7 @@ export function cn(...inputs: ClassValue[]) {
       const componentName = getComponentName(page.name);
       const slug = getSlug(page.name);
       const path = isHomePage(page, pages) ? 'app/page.tsx' : `app/${slug}/page.tsx`;
-      site[path] = generateReact(page.elements, pages, folders, componentName, 'nextjs', true, extractedComponents);
+      site[path] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'nextjs', true, extractedComponents);
     });
   }
   
