@@ -5,6 +5,7 @@ import { useBuilderStore, ComponentType, ElementInstance } from '@/store/useBuil
 import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
+import { StyleInput } from './StyleInput';
 import { 
   Settings2, 
   Palette, 
@@ -560,23 +561,13 @@ export default function RightPanel() {
                     <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider block mb-2">Mobile Menu</label>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Hamburger Color</label>
-                        <div className="flex gap-2">
-                          <div className="relative w-8 h-8 rounded-md border border-zinc-700 overflow-hidden shrink-0">
-                            <input
-                              type="color"
-                              value={selectedElement.props.hamburgerColor || '#000000'}
-                              onChange={(e) => handlePropChange('hamburgerColor', e.target.value)}
-                              className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
-                            />
-                          </div>
-                          <input
-                            type="text"
-                            value={selectedElement.props.hamburgerColor || ''}
-                            onChange={(e) => handlePropChange('hamburgerColor', e.target.value)}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 uppercase font-mono"
-                          />
-                        </div>
+                        <StyleInput
+                          label="Hamburger Color"
+                          type="color"
+                          value={selectedElement.props.hamburgerColor || ''}
+                          onChange={(val) => handlePropChange('hamburgerColor', val)}
+                          placeholder="#000000"
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Icon Size</label>
@@ -713,16 +704,13 @@ export default function RightPanel() {
 
             <PropertySection title="Typography" icon={TypeIcon}>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Size</label>
-                  <input
-                    type="text"
-                    value={currentStyles.fontSize || ''}
-                    onChange={(e) => handleStyleChange('fontSize', e.target.value)}
-                    placeholder="16px"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
-                  />
-                </div>
+                <StyleInput
+                  label="Size"
+                  type="font"
+                  value={currentStyles.fontSize || ''}
+                  onChange={(val) => handleStyleChange('fontSize', val)}
+                  placeholder="16px"
+                />
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Weight</label>
                   <select
@@ -738,26 +726,13 @@ export default function RightPanel() {
                   </select>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Color</label>
-                <div className="flex gap-2">
-                  <div className="relative w-8 h-8 rounded-md border border-zinc-700 overflow-hidden">
-                    <input
-                      type="color"
-                      value={currentStyles.color || '#000000'}
-                      onChange={(e) => handleStyleChange('color', e.target.value)}
-                      className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={currentStyles.color || ''}
-                    onChange={(e) => handleStyleChange('color', e.target.value)}
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 uppercase font-mono"
-                    placeholder="#000000"
-                  />
-                </div>
-              </div>
+              <StyleInput
+                label="Color"
+                type="color"
+                value={currentStyles.color || ''}
+                onChange={(val) => handleStyleChange('color', val)}
+                placeholder="#000000"
+              />
               <div className="space-y-1.5">
                 <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Alignment</label>
                 <div className="flex bg-zinc-800 rounded-md p-1 border border-zinc-700">
@@ -779,26 +754,13 @@ export default function RightPanel() {
 
             <PropertySection title="Appearance" icon={Palette}>
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Background</label>
-                  <div className="flex gap-2">
-                    <div className="relative w-8 h-8 rounded-md border border-zinc-700 overflow-hidden">
-                      <input
-                        type="color"
-                        value={currentStyles.backgroundColor || '#ffffff'}
-                        onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                        className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      value={currentStyles.backgroundColor || ''}
-                      onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 uppercase font-mono"
-                      placeholder="transparent"
-                    />
-                  </div>
-                </div>
+                <StyleInput
+                  label="Background"
+                  type="color"
+                  value={currentStyles.backgroundColor || ''}
+                  onChange={(val) => handleStyleChange('backgroundColor', val)}
+                  placeholder="transparent"
+                />
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Background Image</label>
@@ -812,16 +774,13 @@ export default function RightPanel() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Radius</label>
-                    <input
-                      type="text"
-                      value={currentStyles.borderRadius || ''}
-                      onChange={(e) => handleStyleChange('borderRadius', e.target.value)}
-                      placeholder="0px"
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
-                    />
-                  </div>
+                  <StyleInput
+                    label="Radius"
+                    type="radius"
+                    value={currentStyles.borderRadius || ''}
+                    onChange={(val) => handleStyleChange('borderRadius', val)}
+                    placeholder="0px"
+                  />
                   <div className="space-y-1.5">
                     <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Opacity</label>
                     <input
@@ -894,26 +853,20 @@ export default function RightPanel() {
 
             <PropertySection title="Spacing" icon={LayoutIcon}>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Padding</label>
-                  <input
-                    type="text"
-                    value={currentStyles.padding || ''}
-                    onChange={(e) => handleStyleChange('padding', e.target.value)}
-                    placeholder="0px"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Margin</label>
-                  <input
-                    type="text"
-                    value={currentStyles.margin || ''}
-                    onChange={(e) => handleStyleChange('margin', e.target.value)}
-                    placeholder="0px"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
-                  />
-                </div>
+                <StyleInput
+                  label="Padding"
+                  type="spacing"
+                  value={currentStyles.padding || ''}
+                  onChange={(val) => handleStyleChange('padding', val)}
+                  placeholder="0px"
+                />
+                <StyleInput
+                  label="Margin"
+                  type="spacing"
+                  value={currentStyles.margin || ''}
+                  onChange={(val) => handleStyleChange('margin', val)}
+                  placeholder="0px"
+                />
               </div>
             </PropertySection>
 

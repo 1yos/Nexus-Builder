@@ -335,13 +335,27 @@ function TokensTab() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-        {['color', 'spacing', 'font-size'].map(type => {
+        {(['color', 'spacing', 'font', 'radius'] as const).map(type => {
           const filteredTokens = tokens.filter(t => t.type === type);
           if (filteredTokens.length === 0 && type !== 'color') return null;
 
           return (
             <div key={type} className="space-y-3">
-              <h4 className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-1">{type}s</h4>
+              <div className="flex items-center justify-between px-1">
+                <h4 className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{type}s</h4>
+                <button
+                  onClick={() => addToken({
+                    id: uuidv4(),
+                    name: `New ${type}`,
+                    value: type === 'color' ? '#000000' : type === 'spacing' ? '16px' : type === 'font' ? '16px' : '8px',
+                    type: type,
+                    category: 'custom'
+                  })}
+                  className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
               <div className="space-y-2">
                 {filteredTokens.map(token => (
                   <div key={token.id} className="group p-2 bg-zinc-800/50 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all space-y-2">

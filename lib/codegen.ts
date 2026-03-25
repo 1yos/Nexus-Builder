@@ -1,4 +1,4 @@
-import { ElementInstance, Page, Folder } from "@/store/useBuilderStore";
+import { ElementInstance, Page, Folder, DesignToken } from "@/store/useBuilderStore";
 
 /**
  * Helper to generate a URL-friendly slug from a string
@@ -631,9 +631,11 @@ ${elements.map(el => renderElement(el, 6)).join('\n')}
 /**
  * Generates a full HTML document string for a page.
  */
-export function generateFullHTML(page: Page, pages: Page[], folders: Folder[]): string {
+export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], tokens: DesignToken[]): string {
   const content = generateHTML(page.elements, pages, folders, true);
   
+  const tokenStyles = tokens.map(t => `--token-${t.id}: ${t.value};`).join('\n        ');
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -641,6 +643,9 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[]): 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${page.name}</title>
     <style>
+        :root {
+            ${tokenStyles}
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #FFFFFF; background-color: #0A0A0F; }
         a { text-decoration: none; color: inherit; }
@@ -663,14 +668,19 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[]): 
 /**
  * Generates the entire site structure as a record of filenames and content.
  */
-export function generateSiteCode(pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, format: 'html' | 'react' | 'nextjs' = 'html'): Record<string, string> {
+export function generateSiteCode(pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, tokens: DesignToken[], format: 'html' | 'react' | 'nextjs' = 'html'): Record<string, string> {
   const site: Record<string, string> = {};
   
+  const colors = tokens.filter(t => t.type === 'color').map(t => `        '${getSlug(t.name)}': 'var(--token-${t.id})'`).join(',\n');
+  const spacing = tokens.filter(t => t.type === 'spacing').map(t => `        '${getSlug(t.name)}': 'var(--token-${t.id})'`).join(',\n');
+  const fonts = tokens.filter(t => t.type === 'font').map(t => `        '${getSlug(t.name)}': ['var(--token-${t.id})']`).join(',\n');
+  const radius = tokens.filter(t => t.type === 'radius').map(t => `        '${getSlug(t.name)}': 'var(--token-${t.id})'`).join(',\n');
+
   if (format === 'html') {
     pages.forEach(page => {
       const baseName = getSlug(page.name);
       const filename = isHomePage(page, pages) ? 'index.html' : `${baseName}.html`;
-      site[filename] = generateFullHTML(page, pages, folders);
+      site[filename] = generateFullHTML(page, pages, folders, tokens);
     });
   } else if (format === 'react') {
     site['package.json'] = JSON.stringify({
@@ -695,9 +705,44 @@ export function generateSiteCode(pages: Page[], folders: Folder[], globalCompone
         "@types/react-dom": "^18.2.7",
         "@vitejs/plugin-react": "^4.0.3",
         "typescript": "^5.0.2",
-        "vite": "^4.4.5"
+        "vite": "^4.4.5",
+        "tailwindcss": "^3.3.3",
+        "postcss": "^8.4.27",
+        "autoprefixer": "^10.4.14"
       }
     }, null, 2);
+
+    site['tailwind.config.js'] = `/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+${colors}
+      },
+      spacing: {
+${spacing}
+      },
+      fontFamily: {
+${fonts}
+      },
+      borderRadius: {
+${radius}
+      }
+    },
+  },
+  plugins: [],
+};`;
+
+    site['postcss.config.js'] = `module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};`;
 
     site['tsconfig.json'] = JSON.stringify({
       compilerOptions: {
@@ -751,7 +796,13 @@ ReactDom.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )`;
 
-    site['src/index.css'] = `* { box-sizing: border-box; margin: 0; padding: 0; }
+    const tokenStyles = tokens.map(t => `--token-${t.id}: ${t.value};`).join('\n  ');
+
+    site['src/index.css'] = `:root {
+  ${tokenStyles}
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #FFFFFF; background-color: #0A0A0F; }
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; height: auto; }`;
@@ -895,7 +946,20 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+${colors}
+      },
+      spacing: {
+${spacing}
+      },
+      fontFamily: {
+${fonts}
+      },
+      borderRadius: {
+${radius}
+      }
+    },
   },
   plugins: [],
 };`;
@@ -963,9 +1027,15 @@ npm run dev
 3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 `;
 
+    const tokenStyles = tokens.map(t => `--token-${t.id}: ${t.value};`).join('\n  ');
+
     site['app/globals.css'] = `@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  ${tokenStyles}
+}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #FFFFFF; background-color: #0A0A0F; }

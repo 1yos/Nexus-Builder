@@ -10,7 +10,7 @@ import { generateSiteCode } from '@/lib/codegen';
 import JSZip from 'jszip';
 
 export default function PublishPage() {
-  const { pages, folders, globalComponents } = useBuilderStore();
+  const { pages, folders, globalComponents, tokens } = useBuilderStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -47,7 +47,7 @@ export default function PublishPage() {
     setExportError(null);
     try {
       const zip = new JSZip();
-      const siteCode = generateSiteCode(pages, folders, globalComponents, exportFormat);
+      const siteCode = generateSiteCode(pages, folders, globalComponents, tokens, exportFormat);
 
       Object.entries(siteCode).forEach(([filename, content]) => {
         zip.file(filename, content);
