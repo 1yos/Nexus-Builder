@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
 import { useCMSContext, CMSContext } from './CMSContext';
+import LivePreview from './LivePreview';
 import { 
   Trash2, 
   Copy, 
@@ -22,6 +23,7 @@ import {
   ArrowUpToLine, 
   ArrowDownToLine,
   Activity,
+  Code,
   Shield,
   Smartphone,
   Star,
@@ -375,7 +377,9 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     playingAnimationId,
     setPlayingAnimationId,
     entries,
-    collections
+    collections,
+    codeOverrides,
+    setEditorMode
   } = useBuilderStore();
   
   const [isEditing, setIsEditing] = React.useState(false);
@@ -549,6 +553,13 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         title="Duplicate"
       >
         <Copy className="w-3.5 h-3.5" />
+      </button>
+      <button 
+        onClick={(e) => { e.stopPropagation(); setEditorMode('code'); }}
+        className="p-1.5 hover:bg-white/20 rounded transition-colors text-white"
+        title="Edit Code"
+      >
+        <Code className="w-3.5 h-3.5" />
       </button>
       <div className="w-px h-3 bg-white/20 mx-0.5" />
       <button 
@@ -775,6 +786,25 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
   const content = (() => {
     const { animProps, key: animKey } = getAnimationProps();
     
+  const renderContent = () => {
+    const override = codeOverrides[element.id];
+    if (override && override.transpiled) {
+      return (
+        <div {...commonProps}>
+          {badge}
+          {actionButtons}
+          <LivePreview code={override.transpiled} elementId={element.id} />
+          {override.error && (
+            <div className="absolute inset-0 bg-red-500/10 border border-red-500/50 flex items-center justify-center pointer-events-none">
+              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg">
+                Code Error
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     switch (element.type) {
       case 'section':
         return (
@@ -1234,7 +1264,9 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       default:
         return <motion.div key={animKey || element.id} {...commonProps} {...animProps}>{badge}{actionButtons}{element.type}</motion.div>;
     }
-  })();
+  };
+  return renderContent();
+})();
 
   return content;
 }

@@ -254,10 +254,31 @@ function stylesToTailwind(styles: Record<string, string>): string {
 /**
  * Generates a React component string for a list of elements.
  */
-export function generateReact(elements: ElementInstance[], pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, componentName = 'GeneratedPage', framework: 'react' | 'nextjs' = 'react', isPage = true, extractedComponents: string[] = [], isDynamicPage = false): string {
+export function generateReact(
+  elements: ElementInstance[], 
+  pages: Page[], 
+  folders: Folder[], 
+  globalComponents: Record<string, ElementInstance>, 
+  codeOverrides: Record<string, { code: string; transpiled?: string; error?: string }>,
+  componentName = 'GeneratedPage', 
+  framework: 'react' | 'nextjs' = 'react', 
+  isPage = true, 
+  extractedComponents: string[] = [], 
+  isDynamicPage = false
+): string {
   const renderElement = (el: any, indent = 2, contextVar?: string): string => {
     const spaces = ' '.repeat(indent);
     
+    // Check for code overrides
+    const override = codeOverrides[el.id];
+    if (override) {
+      const overrideCompName = `Override_${el.id.replace(/-/g, '_')}`;
+      if (!extractedComponents.includes(overrideCompName)) {
+        extractedComponents.push(overrideCompName);
+      }
+      return `${spaces}<${overrideCompName} />`;
+    }
+
     let tag = el.type;
     const props: string[] = [];
     
@@ -721,9 +742,29 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], t
 }
 
 /**
+ * Generates a React component string for a single element instance.
+ * This is used by the Developer Mode to provide initial code.
+ */
+export function generateComponentCode(element: ElementInstance, pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>): string {
+  const componentName = getComponentName(element.name || element.type);
+  
+  // We use a simplified version of generateReact for a single component
+  return generateReact([element], pages, folders, globalComponents, {}, componentName, 'react', false);
+}
+
+/**
  * Generates the entire site structure as a record of filenames and content.
  */
-export function generateSiteCode(pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, tokens: DesignToken[], format: 'html' | 'react' | 'nextjs' = 'html', collections: any[] = [], entries: any[] = []): Record<string, string> {
+export function generateSiteCode(
+  pages: Page[], 
+  folders: Folder[], 
+  globalComponents: Record<string, ElementInstance>, 
+  tokens: DesignToken[], 
+  format: 'html' | 'react' | 'nextjs' = 'html', 
+  collections: any[] = [], 
+  entries: any[] = [],
+  codeOverrides: Record<string, { code: string; transpiled?: string; error?: string }> = {}
+): Record<string, string> {
   const site: Record<string, string> = {};
   
   const colors = tokens.filter(t => t.type === 'color').map(t => `        '${getSlug(t.name)}': 'var(--token-${t.id})'`).join(',\n');
@@ -1160,6 +1201,14 @@ export function cn(...inputs: ClassValue[]) {
       }
     });
 
+    // Populate with code overrides
+    Object.keys(codeOverrides).forEach(id => {
+      const overrideCompName = `Override_${id.replace(/-/g, '_')}`;
+      if (!extractedComponents.includes(overrideCompName)) {
+        extractedComponents.push(overrideCompName);
+      }
+    });
+
     // Also populate with standard extracted components
     for (const page of pages) {
       for (const el of page.elements) {
@@ -1175,7 +1224,7 @@ export function cn(...inputs: ClassValue[]) {
     // Now generate global components
     Object.entries(globalComponents).forEach(([id, comp]) => {
       const compName = getComponentName(comp.name || `Global ${comp.type}`);
-      site[`components/${compName}.tsx`] = generateReact([comp], pages, folders, globalComponents, compName, 'nextjs', false, extractedComponents);
+      site[`components/${compName}.tsx`] = generateReact([comp], pages, folders, globalComponents, codeOverrides, compName, 'nextjs', false, extractedComponents);
     });
 
     // Now generate standard extracted components
@@ -1184,11 +1233,17 @@ export function cn(...inputs: ClassValue[]) {
         if (componentsToExtract.includes(el.type) && !el.isGlobal) {
           const compName = el.type === 'navbar' ? 'Navbar' : 'Footer';
           if (!site[`components/${compName}.tsx`]) {
-            site[`components/${compName}.tsx`] = generateReact([el], pages, folders, globalComponents, compName, 'nextjs', false, extractedComponents);
+            site[`components/${compName}.tsx`] = generateReact([el], pages, folders, globalComponents, codeOverrides, compName, 'nextjs', false, extractedComponents);
           }
         }
       }
     }
+
+    // Generate code overrides as components
+    Object.entries(codeOverrides).forEach(([id, override]) => {
+      const overrideCompName = `Override_${id.replace(/-/g, '_')}`;
+      site[`components/${overrideCompName}.tsx`] = override.code;
+    });
 
     // Generate pages
     pages.forEach(page => {
@@ -1198,7 +1253,7 @@ export function cn(...inputs: ClassValue[]) {
         const collection = collections.find(c => c.id === page.collectionId);
         if (collection) {
           const path = `app/${collection.slug}/[slug]/page.tsx`;
-          const reactCode = generateReact(page.elements, pages, folders, globalComponents, componentName, 'nextjs', true, extractedComponents, true);
+          const reactCode = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, componentName, 'nextjs', true, extractedComponents, true);
           
           const cleanedReactCode = reactCode.replace(`import cmsData from '@/data/cms.json';\n`, '');
           
@@ -1207,7 +1262,7 @@ export function cn(...inputs: ClassValue[]) {
       } else {
         const slug = getSlug(page.name);
         const path = isHomePage(page, pages) ? 'app/page.tsx' : `app/${slug}/page.tsx`;
-        site[path] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'nextjs', true, extractedComponents, false);
+        site[path] = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, componentName, 'nextjs', true, extractedComponents, false);
       }
     });
 

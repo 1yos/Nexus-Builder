@@ -151,6 +151,13 @@ export interface HistoryState {
   folders: Folder[];
 }
 
+export interface CodeOverride {
+  id: string;
+  code: string;
+  transpiledCode?: string;
+  error?: string | null;
+}
+
 interface BuilderState {
   pages: Page[];
   folders: Folder[];
@@ -176,6 +183,10 @@ interface BuilderState {
   pan: { x: number; y: number };
   playingAnimationId: string | null;
   setPlayingAnimationId: (id: string | null) => void;
+  
+  codeOverrides: Record<string, CodeOverride>;
+  updateCodeOverride: (id: string, code: string, transpiledCode?: string, error?: string | null) => void;
+  removeCodeOverride: (id: string) => void;
   
   // Actions
   setElements: (elements: ElementInstance[]) => void;
@@ -283,6 +294,19 @@ export const useBuilderStore = create<BuilderState>()(
       pan: { x: 0, y: 0 },
       playingAnimationId: null,
       setPlayingAnimationId: (id) => set({ playingAnimationId: id }),
+
+      codeOverrides: {},
+      updateCodeOverride: (id, code, transpiledCode, error) => set(state => ({
+        codeOverrides: {
+          ...state.codeOverrides,
+          [id]: { id, code, transpiledCode, error }
+        }
+      })),
+      removeCodeOverride: (id) => set(state => {
+        const newOverrides = { ...state.codeOverrides };
+        delete newOverrides[id];
+        return { codeOverrides: newOverrides };
+      }),
 
       addCollection: (collection) => set(state => ({ collections: [...state.collections, collection] })),
       updateCollection: (id, updates) => set(state => ({
@@ -1107,7 +1131,8 @@ export const useBuilderStore = create<BuilderState>()(
       partialize: (state) => ({ 
         pages: state.pages, 
         activePageId: state.activePageId,
-        elements: state.elements 
+        elements: state.elements,
+        codeOverrides: state.codeOverrides
       }),
     }
   )

@@ -18,13 +18,14 @@ import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import Toolbar from './Toolbar';
 import Canvas from './Canvas';
+import DeveloperMode from './DeveloperMode';
 import { LucideIcon } from 'lucide-react';
 
 import { useSearchParams } from 'next/navigation';
 import { TEMPLATE_DATA } from '@/lib/template-data';
 
 export default function Editor() {
-  const { addElement, elements, selectElement, isPreview, loadTemplate } = useBuilderStore();
+  const { addElement, elements, selectElement, isPreview, loadTemplate, editorMode } = useBuilderStore();
   const searchParams = useSearchParams();
   const templateId = searchParams.get('template');
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -154,7 +155,15 @@ export default function Editor() {
         <div className="flex flex-1 overflow-hidden">
           {!isPreview && <LeftPanel />}
           <Canvas />
-          {!isPreview && <RightPanel />}
+          {!isPreview && (
+            editorMode === 'code' ? (
+              <div className="w-[450px] flex-shrink-0">
+                <DeveloperMode />
+              </div>
+            ) : (
+              <RightPanel />
+            )
+          )}
         </div>
         
         {!isPreview && (
