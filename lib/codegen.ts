@@ -254,8 +254,8 @@ function stylesToTailwind(styles: Record<string, string>): string {
 /**
  * Generates a React component string for a list of elements.
  */
-export function generateReact(elements: ElementInstance[], pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, componentName = 'GeneratedPage', framework: 'react' | 'nextjs' = 'react', isPage = true, extractedComponents: string[] = []): string {
-  const renderElement = (el: any, indent = 2): string => {
+export function generateReact(elements: ElementInstance[], pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, componentName = 'GeneratedPage', framework: 'react' | 'nextjs' = 'react', isPage = true, extractedComponents: string[] = [], isDynamicPage = false): string {
+  const renderElement = (el: any, indent = 2, contextVar?: string): string => {
     const spaces = ' '.repeat(indent);
     
     let tag = el.type;
@@ -352,6 +352,14 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
       return `${spaces}<Footer />`;
     }
 
+    const getBoundValue = (field: string, fallback: string) => {
+      if (el.boundField && contextVar) {
+        const [, fieldName] = el.boundField.split('.');
+        return `{${contextVar}?.${fieldName} || ${JSON.stringify(fallback)}}`;
+      }
+      return JSON.stringify(fallback);
+    };
+
     let isMotion = true;
     switch (el.type) {
       case 'heading':
@@ -361,8 +369,12 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
         tag = 'motion.p';
         break;
       case 'button':
-        if (el.props.linkType === 'internal') {
-          tag = 'motion.div'; // Wrap Link in motion.div
+        if (el.props.linkToDynamicPage && contextVar) {
+          tag = 'motion.div';
+          props.push(`onClick={() => window.location.href = \`/\${${contextVar}.collectionSlug}/\${${contextVar}.id}\`}`);
+          props.push(`className="cursor-pointer"`);
+        } else if (el.props.linkType === 'internal') {
+          tag = 'motion.div';
           props.push(`onClick={() => window.location.href = "${getReactHref(el.props.href || '/')}"}`);
           props.push(`className="cursor-pointer"`);
         } else {
@@ -372,7 +384,12 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
         break;
       case 'image':
         tag = 'motion.img';
-        props.push(`src="${el.props.src || ''}"`);
+        if (el.boundField && contextVar) {
+          const [, fieldName] = el.boundField.split('.');
+          props.push(`src={${contextVar}.data?.${fieldName} || "${el.props.src || ''}"}`);
+        } else {
+          props.push(`src="${el.props.src || ''}"`);
+        }
         props.push(`alt="${el.props.alt || ''}"`);
         break;
       case 'section':
@@ -443,8 +460,35 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
     }
     
     let children = el.children?.length 
-      ? `\n${el.children.map((c: any) => renderElement(c, indent + 2)).join('\n')}\n${spaces}`
-      : (el.props.text || '');
+      ? `\n${el.children.map((c: any) => renderElement(c, indent + 2, contextVar)).join('\n')}\n${spaces}`
+      : (el.boundField && contextVar ? `{${contextVar}.data?.${el.boundField.split('.')[1]} || ${JSON.stringify(el.props.text || '')}}` : (el.props.text || ''));
+
+    if (el.type === 'collection-list') {
+      const collectionId = el.props.collectionId;
+      if (collectionId) {
+        const itemVar = `item_${el.id.replace(/-/g, '_')}`;
+        
+        let filterSortLimit = `.filter((e: any) => e.collectionId === '${collectionId}')`;
+        
+        if (el.props.sortBy) {
+          filterSortLimit += `.sort((a: any, b: any) => {
+            const valA = a.data['${el.props.sortBy}'];
+            const valB = b.data['${el.props.sortBy}'];
+            if (valA < valB) return ${el.props.sortOrder === 'desc' ? '1' : '-1'};
+            if (valA > valB) return ${el.props.sortOrder === 'desc' ? '-1' : '1'};
+            return 0;
+          })`;
+        }
+        
+        if (el.props.limit > 0) {
+          filterSortLimit += `.slice(0, ${el.props.limit})`;
+        }
+
+        children = `\n${spaces}  {cmsData.entries${filterSortLimit}.map((${itemVar}: any) => (\n${spaces}    <div key={${itemVar}.id} style={{ display: 'contents' }}>\n${el.children?.map((c: any) => renderElement(c, indent + 6, itemVar)).join('\n') || ''}\n${spaces}    </div>\n${spaces}  ))}\n${spaces}`;
+      } else {
+        children = `\n${spaces}  <div className="p-4 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-md m-2 text-xs">Select a collection to bind data</div>\n${spaces}`;
+      }
+    }
 
     if (el.type === 'navbar') {
       const logoHref = getReactHref('/');
@@ -591,13 +635,21 @@ export function generateReact(elements: ElementInstance[], pages: Page[], folder
       }
     }).join('\n');
 
+  const hasCollectionList = elements.some(el => {
+    const check = (e: any): boolean => e.type === 'collection-list' || (e.children && e.children.some(check));
+    return check(el);
+  });
+
+  const cmsPath = framework === 'nextjs' ? '@/data/cms.json' : '../data/cms.json';
+  const cmsImport = (hasCollectionList || isDynamicPage) ? `import cmsData from '${cmsPath}';\n` : '';
+
   if (!isPage) {
     return `'use client';
 import React, { useState } from 'react';
 ${linkImport}
 ${motionImport}
 import * as Icons from 'lucide-react';
-${componentImports}
+${cmsImport}${componentImports}
 
 export default function ${componentName}() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -610,19 +662,22 @@ ${elements.map(el => renderElement(el, 6)).join('\n')}
 }`;
   }
 
+  const pageProps = isDynamicPage ? `{ entry }: { entry: any }` : ``;
+  const contextVar = isDynamicPage ? 'entry' : undefined;
+
   return `'use client';
 import React, { useState } from 'react';
 ${linkImport}
 ${motionImport}
 import * as Icons from 'lucide-react';
-${componentImports}
+${cmsImport}${componentImports}
 
-export default function ${componentName}() {
+export default function ${componentName}(${pageProps}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div ${rootProps}>
-${elements.map(el => renderElement(el, 6)).join('\n')}
+${elements.map(el => renderElement(el, 6, contextVar)).join('\n')}
     </div>
   );
 }`;
@@ -668,7 +723,7 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], t
 /**
  * Generates the entire site structure as a record of filenames and content.
  */
-export function generateSiteCode(pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, tokens: DesignToken[], format: 'html' | 'react' | 'nextjs' = 'html'): Record<string, string> {
+export function generateSiteCode(pages: Page[], folders: Folder[], globalComponents: Record<string, ElementInstance>, tokens: DesignToken[], format: 'html' | 'react' | 'nextjs' = 'html', collections: any[] = [], entries: any[] = []): Record<string, string> {
   const site: Record<string, string> = {};
   
   const colors = tokens.filter(t => t.type === 'color').map(t => `        '${getSlug(t.name)}': 'var(--token-${t.id})'`).join(',\n');
@@ -853,12 +908,36 @@ img { max-width: 100%; height: auto; }`;
     const pageComponents: { name: string; path: string; component: string }[] = [];
     pages.forEach(page => {
       const componentName = getComponentName(page.name);
-      const slug = getSlug(page.name);
-      const path = isHomePage(page, pages) ? '/' : `/${slug}`;
-      const filename = `src/pages/${componentName}.tsx`;
-      site[filename] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'react', true, extractedComponents);
-      pageComponents.push({ name: componentName, path, component: componentName });
+      
+      if (page.isDynamic && page.collectionId) {
+        const collection = collections.find(c => c.id === page.collectionId);
+        if (collection) {
+          const path = `/${collection.slug}/:slug`;
+          const filename = `src/pages/${componentName}.tsx`;
+          const reactCode = generateReact(page.elements, pages, folders, globalComponents, componentName, 'react', true, extractedComponents, true);
+          
+          const cleanedReactCode = reactCode.replace(`import cmsData from '../data/cms.json';\n`, '');
+          
+          site[filename] = `import cmsData from '../data/cms.json';\nimport { useParams } from 'react-router-dom';\n\n${cleanedReactCode.replace(`export default function ${componentName}({ entry }: { entry: any }) {`, `export default function ${componentName}() {\n  const { slug } = useParams();\n  const entry = cmsData.entries.find(e => e.id === slug);\n  if (!entry) return <div>Not Found</div>;\n`)}`;
+          pageComponents.push({ name: componentName, path, component: componentName });
+        }
+      } else {
+        const slug = getSlug(page.name);
+        const path = isHomePage(page, pages) ? '/' : `/${slug}`;
+        const filename = `src/pages/${componentName}.tsx`;
+        site[filename] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'react', true, extractedComponents, false);
+        pageComponents.push({ name: componentName, path, component: componentName });
+      }
     });
+
+    // Generate CMS data file
+    if (collections.length > 0 || entries.length > 0) {
+      const entriesWithSlugs = entries.map(entry => {
+        const collection = collections.find(c => c.id === entry.collectionId);
+        return { ...entry, collectionSlug: collection?.slug || '' };
+      });
+      site['src/data/cms.json'] = JSON.stringify({ collections, entries: entriesWithSlugs }, null, 2);
+    }
 
     // App.tsx with routing
     site['src/App.tsx'] = `import React from 'react';
@@ -1114,10 +1193,32 @@ export function cn(...inputs: ClassValue[]) {
     // Generate pages
     pages.forEach(page => {
       const componentName = getComponentName(page.name);
-      const slug = getSlug(page.name);
-      const path = isHomePage(page, pages) ? 'app/page.tsx' : `app/${slug}/page.tsx`;
-      site[path] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'nextjs', true, extractedComponents);
+      
+      if (page.isDynamic && page.collectionId) {
+        const collection = collections.find(c => c.id === page.collectionId);
+        if (collection) {
+          const path = `app/${collection.slug}/[slug]/page.tsx`;
+          const reactCode = generateReact(page.elements, pages, folders, globalComponents, componentName, 'nextjs', true, extractedComponents, true);
+          
+          const cleanedReactCode = reactCode.replace(`import cmsData from '@/data/cms.json';\n`, '');
+          
+          site[path] = `import cmsData from '@/data/cms.json';\nimport { notFound } from 'next/navigation';\n\nexport function generateStaticParams() {\n  return cmsData.entries.filter(e => e.collectionId === '${collection.id}').map(entry => ({\n    slug: entry.id,\n  }));\n}\n\n${cleanedReactCode.replace(`export default function ${componentName}({ entry }: { entry: any }) {`, `export default function ${componentName}({ params }: { params: { slug: string } }) {\n  const entry = cmsData.entries.find(e => e.id === params.slug);\n  if (!entry) return notFound();\n`)}`;
+        }
+      } else {
+        const slug = getSlug(page.name);
+        const path = isHomePage(page, pages) ? 'app/page.tsx' : `app/${slug}/page.tsx`;
+        site[path] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'nextjs', true, extractedComponents, false);
+      }
     });
+
+    // Generate CMS data file
+    if (collections.length > 0 || entries.length > 0) {
+      const entriesWithSlugs = entries.map(entry => {
+        const collection = collections.find(c => c.id === entry.collectionId);
+        return { ...entry, collectionSlug: collection?.slug || '' };
+      });
+      site[format === 'nextjs' ? 'data/cms.json' : 'src/data/cms.json'] = JSON.stringify({ collections, entries: entriesWithSlugs }, null, 2);
+    }
   }
   
   return site;

@@ -32,9 +32,11 @@ import {
   ChevronRight,
   Check,
   Folder,
-  GripVertical
+  GripVertical,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PageSettingsModal } from './PageSettingsModal';
 
 export default function PageSelector() {
   const { 
@@ -65,6 +67,7 @@ export default function PageSelector() {
 
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
+  const [settingsPageId, setSettingsPageId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -184,6 +187,16 @@ export default function PageSelector() {
         </div>
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSettingsPageId(page.id);
+            }}
+            className="p-1 hover:bg-zinc-700 rounded text-zinc-500 hover:text-zinc-200"
+            title="Page Settings"
+          >
+            <Settings className="w-3 h-3" />
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -408,6 +421,12 @@ export default function PageSelector() {
             </div>
           </div>
         </>
+      )}
+      {settingsPageId && (
+        <PageSettingsModal 
+          pageId={settingsPageId} 
+          onClose={() => setSettingsPageId(null)} 
+        />
       )}
     </div>
   );

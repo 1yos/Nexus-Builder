@@ -35,7 +35,8 @@ import {
   Maximize,
   Minimize,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react';
 
 export default function RightPanel() {
@@ -53,6 +54,7 @@ export default function RightPanel() {
     setRightPanelCollapsed,
     deviceMode,
     tokens,
+    collections,
     updateGlobalComponent,
     playingAnimationId,
     setPlayingAnimationId
@@ -425,6 +427,124 @@ export default function RightPanel() {
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary min-h-[100px] resize-none"
                   placeholder="Enter text..."
                 />
+              </PropertySection>
+            )}
+
+            {['heading', 'paragraph', 'button', 'image'].includes(selectedElement.type) && collections.length > 0 && (
+              <PropertySection title="CMS Binding" icon={Database}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Bind to Field</label>
+                    <select
+                      value={selectedElement.boundField || ''}
+                      onChange={(e) => updateElement(selectedElement.id, { boundField: e.target.value || undefined })}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                    >
+                      <option value="">None</option>
+                      {collections.map(collection => (
+                        <optgroup key={collection.id} label={collection.name}>
+                          {collection.fields.map(field => (
+                            <option key={field.id} value={`${collection.id}.${field.name}`}>
+                              {field.name} ({field.type})
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedElement.type === 'button' && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Dynamic Page Link</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="link-to-dynamic"
+                          checked={selectedElement.props.linkToDynamicPage || false}
+                          onChange={(e) => handlePropChange('linkToDynamicPage', e.target.checked)}
+                          className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-800 text-accent-primary focus:ring-accent-primary"
+                        />
+                        <label htmlFor="link-to-dynamic" className="text-[10px] text-zinc-300 cursor-pointer">
+                          Link to Entry&apos;s Dynamic Page
+                        </label>
+                      </div>
+                      <p className="text-[9px] text-zinc-500">
+                        Automatically links to the dynamic page for this entry.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </PropertySection>
+            )}
+
+            {selectedElement.type === 'collection-list' && (
+              <PropertySection title="Collection Settings" icon={Database}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Source Collection</label>
+                    <select
+                      value={selectedElement.props.collectionId || ''}
+                      onChange={(e) => handlePropChange('collectionId', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                    >
+                      <option value="">Select a collection...</option>
+                      {collections.map(collection => (
+                        <option key={collection.id} value={collection.id}>
+                          {collection.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {selectedElement.props.collectionId && (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Sort By</label>
+                        <select
+                          value={selectedElement.props.sortBy || ''}
+                          onChange={(e) => handlePropChange('sortBy', e.target.value)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                        >
+                          <option value="">Default (Created Date)</option>
+                          {collections.find(c => c.id === selectedElement.props.collectionId)?.fields.map(field => (
+                            <option key={field.id} value={field.name}>
+                              {field.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Sort Order</label>
+                        <div className="flex bg-zinc-800 rounded-md p-1 border border-zinc-700">
+                          {['asc', 'desc'].map((order) => (
+                            <button
+                              key={order}
+                              onClick={() => handlePropChange('sortOrder', order)}
+                              className={cn(
+                                "flex-1 py-1 text-[10px] uppercase font-bold rounded transition-all",
+                                selectedElement.props.sortOrder === order ? "bg-zinc-700 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                              )}
+                            >
+                              {order === 'asc' ? 'Ascending' : 'Descending'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Limit (0 for all)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={selectedElement.props.limit || 0}
+                          onChange={(e) => handlePropChange('limit', parseInt(e.target.value) || 0)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
               </PropertySection>
             )}
 

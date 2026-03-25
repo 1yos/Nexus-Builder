@@ -5,9 +5,10 @@ import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe } from 'lucide-react';
+import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
+import { CMSPanel } from './CMSPanel';
 
 export default function LeftPanel() {
   const { leftPanelTab, setLeftPanelTab, leftPanelCollapsed, setLeftPanelCollapsed } = useBuilderStore();
@@ -62,7 +63,7 @@ export default function LeftPanel() {
         <ChevronLeft className="w-4 h-4" />
       </button>
 
-      <div className="grid grid-cols-4 border-b border-zinc-800">
+      <div className="grid grid-cols-5 border-b border-zinc-800">
         <button
           onClick={() => setLeftPanelTab('components')}
           className={cn(
@@ -103,6 +104,16 @@ export default function LeftPanel() {
           <Palette className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate w-full text-center px-1">Tokens</span>
         </button>
+        <button
+          onClick={() => setLeftPanelTab('cms')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            leftPanelTab === 'cms' ? "text-blue-500 border-b-2 border-blue-500 bg-blue-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <Database className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate w-full text-center px-1">CMS</span>
+        </button>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
@@ -110,6 +121,7 @@ export default function LeftPanel() {
         {leftPanelTab === 'layers' && <LayersTab />}
         {leftPanelTab === 'code' && <CodePanel />}
         {leftPanelTab === 'tokens' && <TokensTab />}
+        {leftPanelTab === 'cms' && <CMSPanel />}
       </div>
     </aside>
   );
@@ -139,7 +151,7 @@ function ComponentsTab() {
         )}
         <ComponentGroup title="Layout" types={['section', 'container', 'grid', 'flex']} search={search} />
         <ComponentGroup title="Basic" types={['heading', 'paragraph', 'button', 'image', 'icon', 'divider', 'spacer']} search={search} />
-        <ComponentGroup title="Advanced" types={['navbar', 'hero', 'card', 'pricing', 'features', 'footer']} search={search} />
+        <ComponentGroup title="Advanced" types={['navbar', 'hero', 'card', 'pricing', 'features', 'footer', 'collection-list']} search={search} />
       </div>
     </>
   );

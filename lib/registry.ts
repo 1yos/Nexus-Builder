@@ -13,7 +13,8 @@ import {
   CreditCard,
   ListTodo,
   MessageSquare,
-  Navigation
+  Navigation,
+  Database
 } from "lucide-react";
 
 export interface ComponentVariant {
@@ -420,4 +421,34 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       }
     ]
   },
+  'collection-list': {
+    type: 'collection-list',
+    label: 'Collection List',
+    icon: Database,
+    isContainer: true,
+    defaultProps: {
+      collectionId: '',
+      limit: 0,
+      sortBy: '',
+      sortOrder: 'asc'
+    },
+    defaultStyles: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+      gap: '1rem',
+      width: '100%',
+    },
+    variants: [
+      {
+        id: 'grid-2',
+        label: '2 Columns',
+        styles: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem' }
+      },
+      {
+        id: 'grid-3',
+        label: '3 Columns',
+        styles: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '2rem' }
+      }
+    ]
+  }
 };

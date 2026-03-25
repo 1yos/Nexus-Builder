@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 export type ComponentType = 
   | 'section' | 'container' | 'grid' | 'flex'
   | 'heading' | 'paragraph' | 'button' | 'image' | 'icon' | 'divider' | 'spacer'
-  | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features';
+  | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features' | 'collection-list';
 
 export interface Styles {
   fontSize?: string;
@@ -54,6 +54,26 @@ export interface Interaction {
   value?: string;
 }
 
+export interface CollectionField {
+  id: string;
+  name: string;
+  type: 'text' | 'image' | 'richtext' | 'date' | 'number' | 'boolean';
+  required: boolean;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  fields: CollectionField[];
+}
+
+export interface Entry {
+  id: string;
+  collectionId: string;
+  data: Record<string, any>;
+}
+
 export interface DesignToken {
   id: string;
   name: string;
@@ -74,6 +94,7 @@ export interface ElementInstance {
   globalId?: string;
   isMaster?: boolean;
   isSlot?: boolean;
+  boundField?: string;
   variants?: { id: string; name: string; styles: Styles }[];
   activeVariantId?: string;
   slots?: Record<string, ElementInstance[]>;
@@ -103,6 +124,8 @@ export interface Page {
   elements: ElementInstance[];
   folderId?: string;
   order: number;
+  isDynamic?: boolean;
+  collectionId?: string;
 }
 
 export interface Folder {
@@ -138,7 +161,7 @@ interface BuilderState {
   deviceMode: DeviceMode;
   editorMode: EditorMode;
   isPreview: boolean;
-  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens';
+  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens' | 'cms';
   rightPanelTab: 'style' | 'content' | 'layout' | 'animations' | 'interactions';
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
@@ -146,6 +169,8 @@ interface BuilderState {
   historyIndex: number;
   globalComponents: Record<string, ElementInstance>;
   tokens: DesignToken[];
+  collections: Collection[];
+  entries: Entry[];
   presence: PresenceUser[];
   zoom: number;
   pan: { x: number; y: number };
@@ -164,7 +189,7 @@ interface BuilderState {
   moveElementTo: (id: string, parentId: string | null, index: number) => void;
   setDeviceMode: (mode: DeviceMode) => void;
   setEditorMode: (mode: EditorMode) => void;
-  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens') => void;
+  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms') => void;
   setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations' | 'interactions') => void;
   setLeftPanelCollapsed: (collapsed: boolean) => void;
   setRightPanelCollapsed: (collapsed: boolean) => void;
@@ -175,6 +200,14 @@ interface BuilderState {
   setPan: (pan: { x: number; y: number }) => void;
   showOutlines: boolean;
   setShowOutlines: (show: boolean) => void;
+  
+  // CMS Actions
+  addCollection: (collection: Collection) => void;
+  updateCollection: (id: string, updates: Partial<Collection>) => void;
+  deleteCollection: (id: string) => void;
+  addEntry: (entry: Entry) => void;
+  updateEntry: (id: string, updates: Partial<Entry>) => void;
+  deleteEntry: (id: string) => void;
   showEmptySlots: boolean;
   setShowEmptySlots: (show: boolean) => void;
   
@@ -183,6 +216,7 @@ interface BuilderState {
   removePage: (id: string) => void;
   setActivePage: (id: string) => void;
   renamePage: (id: string, name: string) => void;
+  updatePage: (id: string, updates: Partial<Page>) => void;
   setPreview: (isPreview: boolean) => void;
   duplicateElement: (id: string) => void;
   loadTemplate: (elements: ElementInstance[]) => void;
@@ -242,11 +276,29 @@ export const useBuilderStore = create<BuilderState>()(
       historyIndex: 0,
       globalComponents: {},
       tokens: [],
+      collections: [],
+      entries: [],
       presence: [],
       zoom: 1,
       pan: { x: 0, y: 0 },
       playingAnimationId: null,
       setPlayingAnimationId: (id) => set({ playingAnimationId: id }),
+
+      addCollection: (collection) => set(state => ({ collections: [...state.collections, collection] })),
+      updateCollection: (id, updates) => set(state => ({
+        collections: state.collections.map(c => c.id === id ? { ...c, ...updates } : c)
+      })),
+      deleteCollection: (id) => set(state => ({
+        collections: state.collections.filter(c => c.id !== id),
+        entries: state.entries.filter(e => e.collectionId !== id) // Cascade delete entries
+      })),
+      addEntry: (entry) => set(state => ({ entries: [...state.entries, entry] })),
+      updateEntry: (id, updates) => set(state => ({
+        entries: state.entries.map(e => e.id === id ? { ...e, ...updates } : e)
+      })),
+      deleteEntry: (id) => set(state => ({
+        entries: state.entries.filter(e => e.id !== id)
+      })),
 
       setElements: (elements) => {
         const { pages, activePageId } = get();
@@ -820,6 +872,13 @@ export const useBuilderStore = create<BuilderState>()(
       renamePage: (id, name) => {
         const { pages } = get();
         const newPages = pages.map(p => p.id === id ? { ...p, name } : p);
+        set({ pages: newPages });
+        get().saveToHistory();
+      },
+
+      updatePage: (id, updates) => {
+        const { pages } = get();
+        const newPages = pages.map(p => p.id === id ? { ...p, ...updates } : p);
         set({ pages: newPages });
         get().saveToHistory();
       },

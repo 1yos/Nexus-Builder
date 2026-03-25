@@ -7,6 +7,7 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
+import { useCMSContext, CMSContext } from './CMSContext';
 import { 
   Trash2, 
   Copy, 
@@ -69,8 +70,17 @@ export default function Canvas() {
     setShowEmptySlots,
     pages,
     folders,
-    updateElement
+    updateElement,
+    collections,
+    entries,
+    setActivePage,
+    activePageId
   } = useBuilderStore();
+
+  const activePage = pages.find(p => p.id === activePageId);
+  const isDynamicPage = activePage?.isDynamic;
+  const dynamicCollectionId = activePage?.collectionId;
+  const firstEntry = entries.find(e => e.collectionId === dynamicCollectionId);
 
   const elementsToRender = React.useMemo(() => {
     if (!isolatedElementId) return elements;
@@ -296,15 +306,17 @@ export default function Canvas() {
                 </p>
               </div>
             ) : (
-              <React.Fragment key="canvas-content">
-                <DropIndicator key="drop-indicator-root-0" index={0} />
-                {elementsToRender.map((element, idx) => (
-                  <React.Fragment key={element.id}>
-                    <RenderElement element={element} index={idx} />
-                    <DropIndicator index={idx + 1} />
-                  </React.Fragment>
-                ))}
-              </React.Fragment>
+              <CMSContext.Provider value={isDynamicPage ? firstEntry : null}>
+                <React.Fragment key="canvas-content">
+                  <DropIndicator key="drop-indicator-root-0" index={0} />
+                  {elementsToRender.map((element, idx) => (
+                    <React.Fragment key={element.id}>
+                      <RenderElement element={element} index={idx} />
+                      <DropIndicator index={idx + 1} />
+                    </React.Fragment>
+                  ))}
+                </React.Fragment>
+              </CMSContext.Provider>
             )}
           </AnimatePresence>
         </motion.div>
@@ -361,12 +373,15 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     showOutlines,
     showEmptySlots,
     playingAnimationId,
-    setPlayingAnimationId
+    setPlayingAnimationId,
+    entries,
+    collections
   } = useBuilderStore();
   
   const [isEditing, setIsEditing] = React.useState(false);
   const [textValue, setTextValue] = React.useState(element.props.text || '');
   const [openDropdownId, setOpenDropdownId] = React.useState<string | null>(null);
+  const cmsData = useCMSContext();
 
   React.useEffect(() => {
     const handleClickOutside = () => setOpenDropdownId(null);
@@ -401,6 +416,14 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     },
     disabled: isPreview || element.locked,
   });
+
+  const getBoundValue = () => {
+    if (!element.boundField || !cmsData) return null;
+    const [, fieldName] = element.boundField.split('.');
+    return cmsData.data?.[fieldName];
+  };
+
+  const boundValue = getBoundValue();
 
   const executeInteraction = (interaction: any) => {
     if (!interaction.targetId) return;
@@ -786,7 +809,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              element.props.text
+              boundValue || element.props.text
             )}
           </Tag>
         );
@@ -806,20 +829,32 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                 rows={3}
               />
             ) : (
-              element.props.text
+              boundValue || element.props.text
             )}
           </motion.div>
         );
       case 'button':
+        let buttonHref = element.props.href;
+        if (isPreview && element.props.linkToDynamicPage && cmsData) {
+          const dynamicPage = pages.find(p => p.isDynamic && p.collectionId === cmsData.collectionId);
+          if (dynamicPage) {
+            const collection = collections.find(c => c.id === cmsData.collectionId);
+            if (collection) {
+              buttonHref = `/${collection.slug}/${cmsData.id}`;
+            }
+          }
+        }
         return (
           <motion.a 
             key={animKey || element.id}
-            href={element.props.href} 
+            href={buttonHref} 
             {...commonProps} 
             {...animProps}
             onClick={(e) => {
               handleClick(e);
-              handleLinkClick(e, element.props.href || '', element.props.linkType || 'external');
+              if (buttonHref) {
+                handleLinkClick(e, buttonHref, element.props.linkType || 'external');
+              }
             }}
           >
             {badge}
@@ -835,7 +870,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              element.props.text
+              boundValue || element.props.text
             )}
           </motion.a>
         );
@@ -850,12 +885,63 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
             {badge}
             {actionButtons}
             <NextImage 
-              src={element.props.src || 'https://picsum.photos/seed/nexus/800/600'} 
+              src={boundValue || element.props.src || 'https://picsum.photos/seed/nexus/800/600'} 
               alt={element.props.alt || 'Image'} 
               fill
               className={cn(commonProps.className, "object-cover")}
               referrerPolicy="no-referrer"
             />
+          </motion.div>
+        );
+      case 'collection-list':
+        const collectionId = element.props.collectionId;
+        let collectionEntries = entries.filter(e => e.collectionId === collectionId);
+        
+        if (element.props.sortBy) {
+          collectionEntries.sort((a, b) => {
+            const valA = a.data[element.props.sortBy];
+            const valB = b.data[element.props.sortBy];
+            if (valA < valB) return element.props.sortOrder === 'desc' ? 1 : -1;
+            if (valA > valB) return element.props.sortOrder === 'desc' ? -1 : 1;
+            return 0;
+          });
+        }
+
+        if (element.props.limit > 0) {
+          collectionEntries = collectionEntries.slice(0, element.props.limit);
+        }
+        
+        if (!isPreview) {
+          const templateEntry = collectionEntries[0] || { id: 'template', data: {} };
+          return (
+            <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+              {badge}
+              {actionButtons}
+              {!collectionId && (
+                <div className="p-4 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-md m-2 text-xs">
+                  Select a collection in the right panel to bind data
+                </div>
+              )}
+              {collectionId && (
+                <CMSContext.Provider value={templateEntry}>
+                  {renderChildren()}
+                </CMSContext.Provider>
+              )}
+            </motion.div>
+          );
+        }
+
+        return (
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            {collectionEntries.map(entry => (
+              <CMSContext.Provider key={entry.id} value={entry}>
+                <div className="collection-item-wrapper" style={{ display: 'contents' }}>
+                  {renderChildren()}
+                </div>
+              </CMSContext.Provider>
+            ))}
           </motion.div>
         );
       case 'grid':
