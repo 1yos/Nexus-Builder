@@ -6,7 +6,7 @@ import { Copy, Check, Code as CodeIcon, FileJson, FileCode } from 'lucide-react'
 import { generateFullHTML, generateReact } from '@/lib/codegen';
 
 export default function CodePanel() {
-  const { pages, folders, activePageId, globalComponents, tokens } = useBuilderStore();
+  const { pages, folders, activePageId, globalComponents, tokens, componentOverrides } = useBuilderStore();
   const [activeTab, setActiveTab] = useState<'react' | 'html' | 'json'>('react');
   const [copied, setCopied] = useState(false);
 
@@ -17,8 +17,8 @@ export default function CodePanel() {
 
     if (activeTab === 'json') return JSON.stringify(currentPage.elements, null, 2);
     if (activeTab === 'html') return generateFullHTML(currentPage, pages, folders, tokens);
-    return generateReact(currentPage.elements, pages, folders, globalComponents);
-  }, [currentPage, activeTab, pages, folders, globalComponents, tokens]);
+    return generateReact(currentPage.elements, pages, folders, globalComponents, componentOverrides);
+  }, [currentPage, activeTab, pages, folders, globalComponents, tokens, componentOverrides]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);

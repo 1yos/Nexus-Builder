@@ -151,13 +151,6 @@ export interface HistoryState {
   folders: Folder[];
 }
 
-export interface CodeOverride {
-  id: string;
-  code: string;
-  transpiledCode?: string;
-  error?: string | null;
-}
-
 interface BuilderState {
   pages: Page[];
   folders: Folder[];
@@ -175,6 +168,7 @@ interface BuilderState {
   history: HistoryState[];
   historyIndex: number;
   globalComponents: Record<string, ElementInstance>;
+  componentOverrides: Record<string, string>;
   tokens: DesignToken[];
   collections: Collection[];
   entries: Entry[];
@@ -183,10 +177,7 @@ interface BuilderState {
   pan: { x: number; y: number };
   playingAnimationId: string | null;
   setPlayingAnimationId: (id: string | null) => void;
-  
-  codeOverrides: Record<string, CodeOverride>;
-  updateCodeOverride: (id: string, code: string, transpiledCode?: string, error?: string | null) => void;
-  removeCodeOverride: (id: string) => void;
+  setComponentOverride: (id: string, code: string) => void;
   
   // Actions
   setElements: (elements: ElementInstance[]) => void;
@@ -286,6 +277,7 @@ export const useBuilderStore = create<BuilderState>()(
       history: [{ pages: initialPages, folders: initialFolders }],
       historyIndex: 0,
       globalComponents: {},
+      componentOverrides: {},
       tokens: [],
       collections: [],
       entries: [],
@@ -294,19 +286,9 @@ export const useBuilderStore = create<BuilderState>()(
       pan: { x: 0, y: 0 },
       playingAnimationId: null,
       setPlayingAnimationId: (id) => set({ playingAnimationId: id }),
-
-      codeOverrides: {},
-      updateCodeOverride: (id, code, transpiledCode, error) => set(state => ({
-        codeOverrides: {
-          ...state.codeOverrides,
-          [id]: { id, code, transpiledCode, error }
-        }
+      setComponentOverride: (id, code) => set(state => ({
+        componentOverrides: { ...state.componentOverrides, [id]: code }
       })),
-      removeCodeOverride: (id) => set(state => {
-        const newOverrides = { ...state.codeOverrides };
-        delete newOverrides[id];
-        return { codeOverrides: newOverrides };
-      }),
 
       addCollection: (collection) => set(state => ({ collections: [...state.collections, collection] })),
       updateCollection: (id, updates) => set(state => ({
@@ -1131,8 +1113,7 @@ export const useBuilderStore = create<BuilderState>()(
       partialize: (state) => ({ 
         pages: state.pages, 
         activePageId: state.activePageId,
-        elements: state.elements,
-        codeOverrides: state.codeOverrides
+        elements: state.elements 
       }),
     }
   )

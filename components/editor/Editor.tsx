@@ -154,16 +154,8 @@ export default function Editor() {
         <Toolbar />
         <div className="flex flex-1 overflow-hidden">
           {!isPreview && <LeftPanel />}
-          <Canvas />
-          {!isPreview && (
-            editorMode === 'code' ? (
-              <div className="w-[450px] flex-shrink-0">
-                <DeveloperMode />
-              </div>
-            ) : (
-              <RightPanel />
-            )
-          )}
+          {editorMode === 'design' ? <Canvas /> : <DeveloperMode />}
+          {!isPreview && <RightPanel />}
         </div>
         
         {!isPreview && (

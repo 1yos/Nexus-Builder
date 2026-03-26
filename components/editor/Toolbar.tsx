@@ -12,8 +12,7 @@ import {
   Download, 
   Share2,
   Eye,
-  Code,
-  AlertTriangle
+  Code
 } from 'lucide-react';
 
 import NexusLogo from '../marketing/NexusLogo';
@@ -35,12 +34,8 @@ export default function Toolbar() {
     setPreview,
     presence,
     editorMode,
-    setEditorMode,
-    selectedElementId,
-    codeOverrides
+    setEditorMode
   } = useBuilderStore();
-
-  const selectedOverride = selectedElementId ? codeOverrides[selectedElementId] : null;
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
@@ -81,12 +76,6 @@ export default function Toolbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        {selectedOverride && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-500 text-[10px] font-bold uppercase tracking-wider">
-            <AlertTriangle className="w-3 h-3" />
-            Code Override Active
-          </div>
-        )}
         <div className="flex -space-x-2">
           {presence.map((user) => (
             <div 
@@ -125,15 +114,6 @@ export default function Toolbar() {
       </div>
 
       <div className="flex items-center gap-2">
-        {!isPreview && (
-          <button 
-            onClick={() => setEditorMode(editorMode === 'code' ? 'design' : 'code')}
-            className={`p-2 rounded-md transition-colors ${editorMode === 'code' ? 'bg-accent-primary text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
-            title="Developer Mode"
-          >
-            <Code className="w-4 h-4" />
-          </button>
-        )}
         <button 
           onClick={() => {
             navigator.clipboard.writeText(window.location.href);
@@ -143,6 +123,13 @@ export default function Toolbar() {
           title="Share project"
         >
           <Share2 className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={() => setEditorMode(editorMode === 'design' ? 'code' : 'design')}
+          className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${editorMode === 'code' ? 'bg-accent-primary text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
+        >
+          <Code className="w-4 h-4" />
+          <span>{editorMode === 'code' ? 'Visual' : 'Code'}</span>
         </button>
         <button 
           onClick={() => setPreview(!isPreview)}

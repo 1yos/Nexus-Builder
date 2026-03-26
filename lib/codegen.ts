@@ -259,7 +259,7 @@ export function generateReact(
   pages: Page[], 
   folders: Folder[], 
   globalComponents: Record<string, ElementInstance>, 
-  codeOverrides: Record<string, { code: string; transpiled?: string; error?: string }>,
+  codeOverrides: Record<string, string>,
   componentName = 'GeneratedPage', 
   framework: 'react' | 'nextjs' = 'react', 
   isPage = true, 
@@ -624,6 +624,12 @@ export function generateReact(
   
   const findUsedComponents = (els: any[], isRoot = false) => {
     for (const el of els) {
+      if (codeOverrides && codeOverrides[el.id]) {
+        const overrideCompName = `Override_${el.id.replace(/-/g, '_')}`;
+        usedComponents.add(overrideCompName);
+        continue; // Don't traverse children of overridden components
+      }
+
       if (!isRoot) {
         if (el.isGlobal && el.globalId && globalComponents[el.globalId] && !el.isMaster) {
           const compName = getComponentName(globalComponents[el.globalId].name || `Global ${el.type}`);
@@ -763,7 +769,7 @@ export function generateSiteCode(
   format: 'html' | 'react' | 'nextjs' = 'html', 
   collections: any[] = [], 
   entries: any[] = [],
-  codeOverrides: Record<string, { code: string; transpiled?: string; error?: string }> = {}
+  codeOverrides: Record<string, string> = {}
 ): Record<string, string> {
   const site: Record<string, string> = {};
   
@@ -915,6 +921,14 @@ img { max-width: 100%; height: auto; }`;
       }
     });
 
+    // Populate with code overrides
+    Object.keys(codeOverrides).forEach(id => {
+      const overrideCompName = `Override_${id.replace(/-/g, '_')}`;
+      if (!extractedComponents.includes(overrideCompName)) {
+        extractedComponents.push(overrideCompName);
+      }
+    });
+
     // Also populate with standard extracted components
     for (const page of pages) {
       for (const el of page.elements) {
@@ -930,7 +944,7 @@ img { max-width: 100%; height: auto; }`;
     // Now generate global components
     Object.entries(globalComponents).forEach(([id, comp]) => {
       const compName = getComponentName(comp.name || `Global ${comp.type}`);
-      site[`src/components/${compName}.tsx`] = generateReact([comp], pages, folders, globalComponents, compName, 'react', false, extractedComponents);
+      site[`src/components/${compName}.tsx`] = generateReact([comp], pages, folders, globalComponents, codeOverrides, compName, 'react', false, extractedComponents);
     });
 
     // Now generate standard extracted components
@@ -939,11 +953,17 @@ img { max-width: 100%; height: auto; }`;
         if (componentsToExtract.includes(el.type) && !el.isGlobal) {
           const compName = el.type === 'navbar' ? 'Navbar' : 'Footer';
           if (!site[`src/components/${compName}.tsx`]) {
-            site[`src/components/${compName}.tsx`] = generateReact([el], pages, folders, globalComponents, compName, 'react', false, extractedComponents);
+            site[`src/components/${compName}.tsx`] = generateReact([el], pages, folders, globalComponents, codeOverrides, compName, 'react', false, extractedComponents);
           }
         }
       }
     }
+
+    // Generate code overrides as components
+    Object.entries(codeOverrides).forEach(([id, override]) => {
+      const overrideCompName = `Override_${id.replace(/-/g, '_')}`;
+      site[`src/components/${overrideCompName}.tsx`] = override;
+    });
 
     // Generate pages as components
     const pageComponents: { name: string; path: string; component: string }[] = [];
@@ -955,7 +975,7 @@ img { max-width: 100%; height: auto; }`;
         if (collection) {
           const path = `/${collection.slug}/:slug`;
           const filename = `src/pages/${componentName}.tsx`;
-          const reactCode = generateReact(page.elements, pages, folders, globalComponents, componentName, 'react', true, extractedComponents, true);
+          const reactCode = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, componentName, 'react', true, extractedComponents, true);
           
           const cleanedReactCode = reactCode.replace(`import cmsData from '../data/cms.json';\n`, '');
           
@@ -966,7 +986,7 @@ img { max-width: 100%; height: auto; }`;
         const slug = getSlug(page.name);
         const path = isHomePage(page, pages) ? '/' : `/${slug}`;
         const filename = `src/pages/${componentName}.tsx`;
-        site[filename] = generateReact(page.elements, pages, folders, globalComponents, componentName, 'react', true, extractedComponents, false);
+        site[filename] = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, componentName, 'react', true, extractedComponents, false);
         pageComponents.push({ name: componentName, path, component: componentName });
       }
     });
@@ -1242,7 +1262,7 @@ export function cn(...inputs: ClassValue[]) {
     // Generate code overrides as components
     Object.entries(codeOverrides).forEach(([id, override]) => {
       const overrideCompName = `Override_${id.replace(/-/g, '_')}`;
-      site[`components/${overrideCompName}.tsx`] = override.code;
+      site[`components/${overrideCompName}.tsx`] = override;
     });
 
     // Generate pages
