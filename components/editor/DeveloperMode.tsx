@@ -111,11 +111,15 @@ export default function CustomComponent() {
       if (!iframe.srcdoc) {
         iframe.onload = () => {
           isIframeLoaded.current = true;
-          (iframe.contentWindow as any)?.renderComponent(latestCode.current);
+          if (typeof (iframe.contentWindow as any)?.renderComponent === 'function') {
+            (iframe.contentWindow as any).renderComponent(latestCode.current);
+          }
         };
         iframe.srcdoc = PREVIEW_TEMPLATE;
       } else if (isIframeLoaded.current) {
-        (iframe.contentWindow as any)?.renderComponent(code);
+        if (typeof (iframe.contentWindow as any)?.renderComponent === 'function') {
+          (iframe.contentWindow as any).renderComponent(code);
+        }
       }
     }
   }, [code]);
