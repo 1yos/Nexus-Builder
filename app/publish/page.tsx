@@ -1,8 +1,8 @@
 'use client';
 
 import DashboardSidebar from '@/components/dashboard/Sidebar';
-import { Globe, Download, Link as LinkIcon, Check, ArrowRight, Hexagon, Shield, Server } from 'lucide-react';
-import { useState } from 'react';
+import { Globe, Download, Link as LinkIcon, Check, ArrowRight, Hexagon, Shield, Server, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useBuilderStore } from '@/store/useBuilderStore';
@@ -11,29 +11,107 @@ import JSZip from 'jszip';
 
 export default function PublishPage() {
   const { pages, folders, globalComponents, tokens, collections, entries, componentOverrides } = useBuilderStore();
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [isPublished, setIsPublished] = useState(false);
+  
+  // Export State
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'html' | 'react' | 'nextjs'>('html');
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>('');
+  const [exportError, setExportError] = useState<string | null>(null);
   const [isInIframe, setIsInIframe] = useState(false);
 
-  const [exportError, setExportError] = useState<string | null>(null);
+  // Deploy State
+  const [vercelToken, setVercelToken] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [deployStatus, setDeployStatus] = useState<'idle' | 'uploading' | 'building' | 'deployed' | 'failed'>('idle');
+  const [deployUrl, setDeployUrl] = useState<string | null>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
 
-  // Check if running in an iframe
-  useState(() => {
+  // Check if running in an iframe and load saved token
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsInIframe(window.self !== window.top);
+      const savedToken = localStorage.getItem('vercelToken');
+      if (savedToken) setVercelToken(savedToken);
     }
-  });
+  }, []);
 
-  const handlePublish = () => {
-    setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
-      setIsPublished(true);
-    }, 2000);
+  const handleDeploy = async () => {
+    if (!vercelToken) {
+      setDeployError('Vercel API Token is required.');
+      return;
+    }
+    if (!projectName) {
+      setDeployError('Project Name is required.');
+      return;
+    }
+    if (pages.length === 0) {
+      setDeployError('No nodes to deploy. Initialize a construct first.');
+      return;
+    }
+
+    // Save token for future use
+    localStorage.setItem('vercelToken', vercelToken);
+
+    setDeployStatus('uploading');
+    setDeployError(null);
+    setDeployUrl(null);
+
+    try {
+      // Generate Next.js site code
+      const siteCode = generateSiteCode(pages, folders, globalComponents, tokens, 'nextjs', collections, entries, componentOverrides);
+
+      // Call our API route
+      const response = await fetch('/api/deploy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: vercelToken,
+          projectName: projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+          files: siteCode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Deployment failed');
+      }
+
+      setDeployStatus('building');
+      
+      // Poll for status
+      const deploymentId = data.id;
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/deploy/status?id=${deploymentId}`, {
+            headers: {
+              'Authorization': `Bearer ${vercelToken}`
+            }
+          });
+          const statusData = await statusRes.json();
+          
+          if (statusData.readyState === 'READY') {
+            clearInterval(pollInterval);
+            setDeployStatus('deployed');
+            setDeployUrl(`https://${statusData.url}`);
+          } else if (statusData.readyState === 'ERROR' || statusData.readyState === 'CANCELED') {
+            clearInterval(pollInterval);
+            setDeployStatus('failed');
+            setDeployError('Deployment failed during build. Check Vercel dashboard for logs.');
+          }
+        } catch (e) {
+          // Ignore polling errors
+        }
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Deploy error:', error);
+      setDeployStatus('failed');
+      setDeployError(error.message || 'An unexpected error occurred.');
+    }
   };
 
   const handleExport = async () => {
@@ -103,29 +181,72 @@ export default function PublishPage() {
               <div className="w-12 h-12 bg-background rounded-xl flex items-center justify-center text-[var(--accent-primary)] mb-6 border border-border group-hover:border-[var(--accent-primary)]/50 transition-colors">
                 <Globe className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-black text-text-primary mb-2 uppercase tracking-wide">BROADCAST TO NEXUS</h2>
+              <h2 className="text-xl font-black text-text-primary mb-2 uppercase tracking-wide">DEPLOY TO VERCEL</h2>
               <p className="text-text-secondary text-sm mb-8 flex-grow font-medium">
-                Establish an instant uplink on a free Nexus subdomain. 
-                Includes encrypted transmission and global node distribution.
+                Establish an instant uplink to Vercel. 
+                Requires a Vercel API Token.
               </p>
               
-              <div className="bg-background p-4 rounded-xl mb-8 border border-border">
-                <div className="flex items-center gap-2 text-sm font-black text-text-secondary uppercase tracking-widest">
-                  <div className="text-text-secondary/70">VECTOR:</div>
-                  <div className="text-[var(--accent-primary)]">alpha-construct.nexus.network (MOCK)</div>
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="text-[10px] font-black text-text-secondary/70 uppercase tracking-[0.2em] mb-2 block">PROJECT NAME</label>
+                  <input 
+                    type="text" 
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder="my-nexus-construct"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm font-medium text-text-primary focus:outline-none focus:border-[var(--accent-primary)]/50 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-text-secondary/70 uppercase tracking-[0.2em] mb-2 block">VERCEL API TOKEN</label>
+                  <input 
+                    type="password" 
+                    value={vercelToken}
+                    onChange={(e) => setVercelToken(e.target.value)}
+                    placeholder="Enter your Vercel API Token"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm font-medium text-text-primary focus:outline-none focus:border-[var(--accent-primary)]/50 transition-colors"
+                  />
                 </div>
               </div>
 
+              {deployError && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 flex items-start gap-3">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-black mb-1 uppercase tracking-widest">DEPLOYMENT ERROR</p>
+                    <p className="font-medium">{deployError}</p>
+                  </div>
+                </div>
+              )}
+
+              {deployUrl && (
+                <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-500 flex flex-col items-center justify-center text-center gap-3">
+                  <div className="text-sm font-black uppercase tracking-widest">BROADCAST ACTIVE</div>
+                  <a 
+                    href={deployUrl} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-green-500 text-white px-6 py-2 rounded-lg font-black text-xs hover:opacity-90 transition-all shadow-sm uppercase tracking-widest flex items-center gap-2"
+                  >
+                    OPEN LIVE LINK <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+
               <button 
-                onClick={handlePublish}
-                disabled={isPublishing || isPublished}
+                onClick={handleDeploy}
+                disabled={deployStatus === 'uploading' || deployStatus === 'building' || deployStatus === 'deployed'}
                 className={`w-full py-4 rounded-xl font-black transition-all flex items-center justify-center gap-2 uppercase tracking-widest ${
-                  isPublished 
+                  deployStatus === 'deployed' 
                     ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
                     : 'bg-accent-gradient text-white hover:shadow-lg hover:shadow-[var(--accent-primary)]/20'
                 }`}
               >
-                {isPublishing ? 'ESTABLISHING UPLINK...' : isPublished ? <><Check className="w-5 h-5" /> BROADCAST ACTIVE</> : 'INITIATE BROADCAST'}
+                {deployStatus === 'uploading' && <><Loader2 className="w-5 h-5 animate-spin" /> UPLOADING MATRIX...</>}
+                {deployStatus === 'building' && <><Loader2 className="w-5 h-5 animate-spin" /> COMPILING CONSTRUCT...</>}
+                {deployStatus === 'deployed' && <><Check className="w-5 h-5" /> DEPLOYMENT SUCCESSFUL</>}
+                {(deployStatus === 'idle' || deployStatus === 'failed') && 'INITIATE DEPLOYMENT'}
               </button>
             </motion.div>
 
