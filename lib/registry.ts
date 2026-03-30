@@ -454,11 +454,11 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
   },
   html: {
     type: 'html',
-    label: 'Custom HTML',
+    label: 'Code',
     icon: Code,
     isContainer: false,
     defaultProps: {
-      htmlContent: '<div>\n  <p>Custom HTML</p>\n</div>'
+      htmlContent: '<div>\n  <p>Custom Code</p>\n</div>'
     },
     defaultStyles: {
       width: '100%',

@@ -150,7 +150,7 @@ function ComponentsTab() {
           <GlobalComponentGroup search={search} />
         )}
         <ComponentGroup title="Layout" types={['section', 'container', 'grid', 'flex']} search={search} />
-        <ComponentGroup title="Basic" types={['heading', 'paragraph', 'button', 'image', 'icon', 'divider', 'spacer', 'html']} search={search} />
+        <ComponentGroup title="Basic" types={['heading', 'paragraph', 'button', 'image', 'html', 'icon', 'divider', 'spacer']} search={search} />
         <ComponentGroup title="Advanced" types={['navbar', 'hero', 'card', 'pricing', 'features', 'footer', 'collection-list']} search={search} />
       </div>
     </>
