@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 export type ComponentType = 
   | 'section' | 'container' | 'grid' | 'flex'
   | 'heading' | 'paragraph' | 'button' | 'image' | 'icon' | 'divider' | 'spacer'
-  | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features' | 'collection-list';
+  | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features' | 'collection-list' | 'html';
 
 export interface Styles {
   fontSize?: string;

@@ -97,12 +97,17 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
       case 'spacer':
         tag = 'div';
         break;
+      case 'html':
+        tag = 'div';
+        break;
     }
     
     const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
     let children = el.children ? generateHTML(el.children, pages, folders, isStaticExport) : (el.props.text || '');
     
-    if (el.type === 'navbar') {
+    if (el.type === 'html') {
+      children = el.props.htmlContent || '';
+    } else if (el.type === 'navbar') {
       const logo = el.props.logoType === 'image' 
         ? `<img src="${el.props.logoSrc}" alt="Logo" style="height: 32px;" />`
         : `<div style="font-weight: bold; font-size: 1.25rem;">${el.props.logoText || 'NEXUS'}</div>`;
@@ -428,6 +433,7 @@ export function generateReact(
       case 'icon':
       case 'divider':
       case 'spacer':
+      case 'html':
         tag = 'motion.div';
         break;
       default:
@@ -438,7 +444,7 @@ export function generateReact(
     props.push(getInteractionProps(el));
 
     const otherProps = Object.entries(el.props || {})
-      .filter(([k]) => !['text', 'level', 'href', 'src', 'alt', 'links', 'logoText', 'logoSrc', 'logoType', 'copyright', 'icon'].includes(k))
+      .filter(([k]) => !['text', 'level', 'href', 'src', 'alt', 'links', 'logoText', 'logoSrc', 'logoType', 'copyright', 'icon', 'htmlContent'].includes(k))
       .map(([k, v]) => `${k}={${JSON.stringify(v)}}`)
       .join(' ');
     
@@ -484,7 +490,10 @@ export function generateReact(
       ? `\n${el.children.map((c: any) => renderElement(c, indent + 2, contextVar)).join('\n')}\n${spaces}`
       : (el.boundField && contextVar ? `{${contextVar}.data?.${el.boundField.split('.')[1]} || ${JSON.stringify(el.props.text || '')}}` : (el.props.text || ''));
 
-    if (el.type === 'collection-list') {
+    if (el.type === 'html') {
+      children = '';
+      props.push(`dangerouslySetInnerHTML={{ __html: ${JSON.stringify(el.props.htmlContent || '')} }}`);
+    } else if (el.type === 'collection-list') {
       const collectionId = el.props.collectionId;
       if (collectionId) {
         const itemVar = `item_${el.id.replace(/-/g, '_')}`;

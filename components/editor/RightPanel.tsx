@@ -36,7 +36,8 @@ import {
   Minimize,
   ChevronLeft,
   ChevronRight,
-  Database
+  Database,
+  Code
 } from 'lucide-react';
 
 export default function RightPanel() {
@@ -430,7 +431,18 @@ export default function RightPanel() {
               </PropertySection>
             )}
 
-            {['heading', 'paragraph', 'button', 'image'].includes(selectedElement.type) && collections.length > 0 && (
+            {selectedElement.props.htmlContent !== undefined && (
+              <PropertySection title="HTML Content" icon={Code}>
+                <textarea
+                  value={selectedElement.props.htmlContent}
+                  onChange={(e) => handlePropChange('htmlContent', e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary min-h-[200px] font-mono whitespace-pre"
+                  placeholder="Enter HTML..."
+                />
+              </PropertySection>
+            )}
+
+            {['heading', 'paragraph', 'button', 'image', 'html'].includes(selectedElement.type) && collections.length > 0 && (
               <PropertySection title="CMS Binding" icon={Database}>
                 <div className="space-y-4">
                   <div className="space-y-1.5">

@@ -14,7 +14,8 @@ import {
   ListTodo,
   MessageSquare,
   Navigation,
-  Database
+  Database,
+  Code
 } from "lucide-react";
 
 export interface ComponentVariant {
@@ -450,5 +451,18 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
         styles: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '2rem' }
       }
     ]
+  },
+  html: {
+    type: 'html',
+    label: 'Custom HTML',
+    icon: Code,
+    isContainer: false,
+    defaultProps: {
+      htmlContent: '<div>\n  <p>Custom HTML</p>\n</div>'
+    },
+    defaultStyles: {
+      width: '100%',
+      minHeight: '50px'
+    }
   }
 };

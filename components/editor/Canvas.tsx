@@ -1003,6 +1003,17 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
             {actionButtons}
           </motion.div>
         );
+      case 'html':
+        return (
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            <div 
+              className="w-full h-full"
+              dangerouslySetInnerHTML={{ __html: element.props.htmlContent || '' }} 
+            />
+          </motion.div>
+        );
       case 'navbar':
         const isMobile = deviceMode === 'mobile' || deviceMode === 'tablet';
         const showHamburger = isMobile && element.props.mobileMenuType === 'hamburger';
