@@ -4,7 +4,7 @@ import { TokenSelector } from './TokenSelector';
 
 interface StyleInputProps {
   label: string;
-  type: 'color' | 'font' | 'spacing' | 'radius';
+  type: 'color' | 'font' | 'spacing' | 'radius' | 'typography';
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;

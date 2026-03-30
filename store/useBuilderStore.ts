@@ -8,6 +8,7 @@ export type ComponentType =
   | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features' | 'collection-list' | 'html';
 
 export interface Styles {
+  typographyToken?: string;
   fontSize?: string;
   fontWeight?: string;
   color?: string;
@@ -77,9 +78,13 @@ export interface Entry {
 export interface DesignToken {
   id: string;
   name: string;
-  type: 'color' | 'font' | 'spacing' | 'radius';
+  type: 'color' | 'font' | 'spacing' | 'radius' | 'typography';
   value: string;
   category?: string;
+  // For typography tokens
+  fontSize?: string;
+  fontWeight?: string;
+  fontFamily?: string;
 }
 
 export interface ElementInstance {

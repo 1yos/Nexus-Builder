@@ -5,10 +5,9 @@ import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { LucideIcon, Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, Database } from 'lucide-react';
+import { Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
-import { CMSPanel } from './CMSPanel';
 
 export default function LeftPanel() {
   const { leftPanelTab, setLeftPanelTab, leftPanelCollapsed, setLeftPanelCollapsed } = useBuilderStore();
@@ -102,17 +101,7 @@ export default function LeftPanel() {
           )}
         >
           <Palette className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Tokens</span>
-        </button>
-        <button
-          onClick={() => setLeftPanelTab('cms')}
-          className={cn(
-            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
-            leftPanelTab === 'cms' ? "text-blue-500 border-b-2 border-blue-500 bg-blue-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
-          )}
-        >
-          <Database className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">CMS</span>
+          <span className="truncate w-full text-center px-1">Theme</span>
         </button>
       </div>
 
@@ -120,8 +109,7 @@ export default function LeftPanel() {
         {leftPanelTab === 'components' && <ComponentsTab />}
         {leftPanelTab === 'layers' && <LayersTab />}
         {leftPanelTab === 'code' && <CodePanel />}
-        {leftPanelTab === 'tokens' && <TokensTab />}
-        {leftPanelTab === 'cms' && <CMSPanel />}
+        {leftPanelTab === 'tokens' && <ThemeTab />}
       </div>
     </aside>
   );
@@ -328,13 +316,13 @@ function DraggableComponent({ type }: { type: keyof typeof COMPONENT_REGISTRY })
   );
 }
 
-function TokensTab() {
+function ThemeTab() {
   const { tokens, addToken, updateToken, removeToken } = useBuilderStore();
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Design Tokens</h3>
+        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Theme Settings</h3>
         <button
           onClick={() => addToken({
             id: uuidv4(),
@@ -349,9 +337,9 @@ function TokensTab() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-        {(['color', 'spacing', 'font', 'radius'] as const).map(type => {
+        {(['color', 'spacing', 'font', 'radius', 'typography'] as const).map(type => {
           const filteredTokens = tokens.filter(t => t.type === type);
-          if (filteredTokens.length === 0 && type !== 'color') return null;
+          if (filteredTokens.length === 0 && type !== 'color' && type !== 'typography') return null;
 
           return (
             <div key={type} className="space-y-3">
@@ -361,9 +349,14 @@ function TokensTab() {
                   onClick={() => addToken({
                     id: uuidv4(),
                     name: `New ${type}`,
-                    value: type === 'color' ? '#000000' : type === 'spacing' ? '16px' : type === 'font' ? '16px' : '8px',
+                    value: type === 'color' ? '#000000' : type === 'spacing' ? '16px' : type === 'font' ? '16px' : type === 'typography' ? '16px' : '8px',
                     type: type,
-                    category: 'custom'
+                    category: 'custom',
+                    ...(type === 'typography' ? {
+                      fontSize: '16px',
+                      fontWeight: '400',
+                      fontFamily: 'sans-serif'
+                    } : {})
                   })}
                   className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
                 >
@@ -379,6 +372,7 @@ function TokensTab() {
                         value={token.name}
                         onChange={(e) => updateToken(token.id, { name: e.target.value })}
                         className="bg-transparent text-[11px] font-medium text-zinc-200 focus:outline-none w-2/3"
+                        placeholder="Token Name (e.g., H1, Paragraph)"
                       />
                       <button
                         onClick={() => removeToken(token.id)}
@@ -387,24 +381,68 @@ function TokensTab() {
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {token.type === 'color' ? (
-                        <div className="relative w-6 h-6 rounded border border-zinc-700 overflow-hidden shrink-0">
+                    
+                    {token.type === 'typography' ? (
+                      <div className="space-y-2 pt-2 border-t border-zinc-800/50">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[9px] text-zinc-500 w-12">Size</label>
                           <input
-                            type="color"
-                            value={token.value}
-                            onChange={(e) => updateToken(token.id, { value: e.target.value })}
-                            className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
+                            type="text"
+                            value={token.fontSize || ''}
+                            onChange={(e) => updateToken(token.id, { fontSize: e.target.value })}
+                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 font-mono"
+                            placeholder="e.g., 24px, 2rem"
                           />
                         </div>
-                      ) : null}
-                      <input
-                        type="text"
-                        value={token.value}
-                        onChange={(e) => updateToken(token.id, { value: e.target.value })}
-                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 font-mono"
-                      />
-                    </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[9px] text-zinc-500 w-12">Weight</label>
+                          <select
+                            value={token.fontWeight || '400'}
+                            onChange={(e) => updateToken(token.id, { fontWeight: e.target.value })}
+                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400"
+                          >
+                            <option value="100">100 - Thin</option>
+                            <option value="200">200 - Extra Light</option>
+                            <option value="300">300 - Light</option>
+                            <option value="400">400 - Normal</option>
+                            <option value="500">500 - Medium</option>
+                            <option value="600">600 - Semi Bold</option>
+                            <option value="700">700 - Bold</option>
+                            <option value="800">800 - Extra Bold</option>
+                            <option value="900">900 - Black</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[9px] text-zinc-500 w-12">Family</label>
+                          <input
+                            type="text"
+                            value={token.fontFamily || ''}
+                            onChange={(e) => updateToken(token.id, { fontFamily: e.target.value })}
+                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 font-mono"
+                            placeholder="e.g., Inter, sans-serif"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {token.type === 'color' ? (
+                          <div className="relative w-6 h-6 rounded border border-zinc-700 overflow-hidden shrink-0">
+                            <input
+                              type="color"
+                              value={token.value}
+                              onChange={(e) => updateToken(token.id, { value: e.target.value })}
+                              className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
+                            />
+                          </div>
+                        ) : null}
+                        <input
+                          type="text"
+                          value={token.value}
+                          onChange={(e) => updateToken(token.id, { value: e.target.value })}
+                          className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 font-mono"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
                 {filteredTokens.length === 0 && (

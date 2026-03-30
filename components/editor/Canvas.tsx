@@ -7,7 +7,6 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
-import { useCMSContext, CMSContext } from './CMSContext';
 import { 
   Trash2, 
   Copy, 
@@ -103,7 +102,13 @@ export default function Canvas() {
   const tokenStyles = React.useMemo(() => {
     const styles: Record<string, string> = {};
     tokens.forEach(token => {
-      styles[`--token-${token.id}`] = token.value;
+      if (token.type === 'typography') {
+        styles[`--token-${token.id}-font-size`] = token.fontSize || 'inherit';
+        styles[`--token-${token.id}-font-weight`] = token.fontWeight || 'inherit';
+        styles[`--token-${token.id}-font-family`] = token.fontFamily || 'inherit';
+      } else {
+        styles[`--token-${token.id}`] = token.value;
+      }
     });
     return styles;
   }, [tokens]);
@@ -318,17 +323,15 @@ export default function Canvas() {
                 </p>
               </div>
             ) : (
-              <CMSContext.Provider value={isDynamicPage ? firstEntry : null}>
-                <React.Fragment key="canvas-content">
-                  <DropIndicator key="drop-indicator-root-0" index={0} />
-                  {elementsToRender.map((element, idx) => (
-                    <React.Fragment key={element.id}>
-                      <RenderElement element={element} index={idx} />
-                      <DropIndicator index={idx + 1} />
-                    </React.Fragment>
-                  ))}
-                </React.Fragment>
-              </CMSContext.Provider>
+              <React.Fragment key="canvas-content">
+                <DropIndicator key="drop-indicator-root-0" index={0} />
+                {elementsToRender.map((element, idx) => (
+                  <React.Fragment key={element.id}>
+                    <RenderElement element={element} index={idx} />
+                    <DropIndicator index={idx + 1} />
+                  </React.Fragment>
+                ))}
+              </React.Fragment>
             )}
           </AnimatePresence>
         </motion.div>
@@ -393,7 +396,6 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
   const [isEditing, setIsEditing] = React.useState(false);
   const [textValue, setTextValue] = React.useState(element.props.text || '');
   const [openDropdownId, setOpenDropdownId] = React.useState<string | null>(null);
-  const cmsData = useCMSContext();
 
   React.useEffect(() => {
     const handleClickOutside = () => setOpenDropdownId(null);
@@ -430,9 +432,7 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
   });
 
   const getBoundValue = () => {
-    if (!element.boundField || !cmsData) return null;
-    const [, fieldName] = element.boundField.split('.');
-    return cmsData.data?.[fieldName];
+    return null;
   };
 
   const boundValue = getBoundValue();
@@ -847,15 +847,6 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         );
       case 'button':
         let buttonHref = element.props.href;
-        if (isPreview && element.props.linkToDynamicPage && cmsData) {
-          const dynamicPage = pages.find(p => p.isDynamic && p.collectionId === cmsData.collectionId);
-          if (dynamicPage) {
-            const collection = collections.find(c => c.id === cmsData.collectionId);
-            if (collection) {
-              buttonHref = `/${collection.slug}/${cmsData.id}`;
-            }
-          }
-        }
         return (
           <motion.a 
             key={animKey || element.id}
@@ -935,9 +926,9 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
                 </div>
               )}
               {collectionId && (
-                <CMSContext.Provider value={templateEntry}>
+                <React.Fragment>
                   {renderChildren()}
-                </CMSContext.Provider>
+                </React.Fragment>
               )}
             </motion.div>
           );
@@ -948,11 +939,11 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
             {badge}
             {actionButtons}
             {collectionEntries.map(entry => (
-              <CMSContext.Provider key={entry.id} value={entry}>
+              <React.Fragment key={entry.id}>
                 <div className="collection-item-wrapper" style={{ display: 'contents' }}>
                   {renderChildren()}
                 </div>
-              </CMSContext.Provider>
+              </React.Fragment>
             ))}
           </motion.div>
         );

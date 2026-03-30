@@ -3,7 +3,7 @@ import { useBuilderStore } from '@/store/useBuilderStore';
 import { ChevronDown } from 'lucide-react';
 
 interface TokenSelectorProps {
-  type: 'color' | 'font' | 'spacing' | 'radius';
+  type: 'color' | 'font' | 'spacing' | 'radius' | 'typography';
   value: string;
   onChange: (value: string) => void;
 }

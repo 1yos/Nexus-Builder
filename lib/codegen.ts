@@ -36,9 +36,22 @@ export function isHomePage(page: Page, pages: Page[]): boolean {
  */
 export function generateHTML(elements: ElementInstance[], pages: Page[], folders: Folder[], isStaticExport = false): string {
   return elements.map(el => {
-    const styles = Object.entries(el.styles || {})
-      .map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}`)
+    const stylesString = Object.entries(el.styles || {})
+      .filter(([k]) => k !== 'typographyToken')
+      .map(([k, v]) => {
+        if (k === 'typographyToken') return '';
+        return `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}`;
+      })
+      .filter(Boolean)
       .join('; ');
+    
+    let typographyStyles = '';
+    if (el.styles?.typographyToken) {
+      const tokenId = el.styles.typographyToken.replace('var(--token-', '').replace(')', '');
+      typographyStyles = `font-size: var(--token-${tokenId}-font-size); font-weight: var(--token-${tokenId}-font-weight); font-family: var(--token-${tokenId}-font-family); `;
+    }
+
+    const finalStyles = (typographyStyles + stylesString).trim();
     
     let tag = 'div';
     const props: string[] = [];
@@ -159,10 +172,10 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
     }
     
     if (el.type === 'image' || el.type === 'divider') {
-      return `<${tag} style="${styles}"${propsString} />`;
+      return `<${tag} style="${finalStyles}"${propsString} />`;
     }
     
-    return `<${tag} style="${styles}"${propsString}>${children}</${tag}>`;
+    return `<${tag} style="${finalStyles}"${propsString}>${children}</${tag}>`;
   }).join('\n');
 }
 
@@ -454,7 +467,14 @@ export function generateReact(
     
     let styleProp = '';
     if (framework === 'nextjs') {
-      const tailwindClasses = stylesToTailwind(el.styles || {});
+      let tailwindClasses = stylesToTailwind(el.styles || {});
+      
+      // Apply typography token classes if present
+      if (el.styles?.typographyToken) {
+        const tokenId = el.styles.typographyToken.replace('var(--token-', '').replace(')', '');
+        tailwindClasses = `${tailwindClasses} text-[var(--token-${tokenId}-font-size)] font-[var(--token-${tokenId}-font-weight)] font-[var(--token-${tokenId}-font-family)]`.trim();
+      }
+
       if (tailwindClasses) {
         // For navbar, ensure it's block to contain the flex child and mobile menu properly
         if (el.type === 'navbar') {
@@ -473,16 +493,22 @@ export function generateReact(
         .map((line, i) => i === 0 ? line : spaces + '    ' + line)
         .join('\n');
       
+      let finalStyleObj = styleObj;
+      if (el.styles?.typographyToken) {
+        const tokenId = el.styles.typographyToken.replace('var(--token-', '').replace(')', '');
+        finalStyleObj = finalStyleObj.replace(/}$/, `  fontSize: 'var(--token-${tokenId}-font-size)',\n  fontWeight: 'var(--token-${tokenId}-font-weight)',\n  fontFamily: 'var(--token-${tokenId}-font-family)'\n}`);
+      }
+
       if (el.type === 'navbar') {
         // Override display to block for navbar
-        const modifiedStyleObj = styleObj.replace(/display:\s*'[^']+',?/, "display: 'block',");
+        const modifiedStyleObj = finalStyleObj.replace(/display:\s*'[^']+',?/, "display: 'block',");
         if (modifiedStyleObj === '{}') {
           styleProp = ` style={{ position: 'relative', width: '100%', display: 'block' }}`;
         } else {
           styleProp = ` style={{ position: 'relative', width: '100%', display: 'block', ...${modifiedStyleObj} }}`;
         }
       } else {
-        styleProp = ` style={${styleObj}}`;
+        styleProp = ` style={${finalStyleObj}}`;
       }
     }
     
@@ -725,7 +751,14 @@ ${elements.map(el => renderElement(el, 6, contextVar)).join('\n')}
 export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], tokens: DesignToken[]): string {
   const content = generateHTML(page.elements, pages, folders, true);
   
-  const tokenStyles = tokens.map(t => `--token-${t.id}: ${t.value};`).join('\n        ');
+  const tokenStyles = tokens.map(t => {
+    if (t.type === 'typography') {
+      return `--token-${t.id}-font-size: ${t.fontSize || 'inherit'};
+        --token-${t.id}-font-weight: ${t.fontWeight || 'inherit'};
+        --token-${t.id}-font-family: ${t.fontFamily || 'inherit'};`;
+    }
+    return `--token-${t.id}: ${t.value};`;
+  }).join('\n        ');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -907,7 +940,14 @@ ReactDom.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )`;
 
-    const tokenStyles = tokens.map(t => `--token-${t.id}: ${t.value};`).join('\n  ');
+    const tokenStyles = tokens.map(t => {
+      if (t.type === 'typography') {
+        return `--token-${t.id}-font-size: ${t.fontSize || 'inherit'};
+  --token-${t.id}-font-weight: ${t.fontWeight || 'inherit'};
+  --token-${t.id}-font-family: ${t.fontFamily || 'inherit'};`;
+      }
+      return `--token-${t.id}: ${t.value};`;
+    }).join('\n  ');
 
     site['src/index.css'] = `:root {
   ${tokenStyles}
@@ -1176,7 +1216,14 @@ npm run dev
 3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 `;
 
-    const tokenStyles = tokens.map(t => `--token-${t.id}: ${t.value};`).join('\n  ');
+    const tokenStyles = tokens.map(t => {
+      if (t.type === 'typography') {
+        return `--token-${t.id}-font-size: ${t.fontSize || 'inherit'};
+  --token-${t.id}-font-weight: ${t.fontWeight || 'inherit'};
+  --token-${t.id}-font-family: ${t.fontFamily || 'inherit'};`;
+      }
+      return `--token-${t.id}: ${t.value};`;
+    }).join('\n  ');
 
     site['app/globals.css'] = `@tailwind base;
 @tailwind components;
