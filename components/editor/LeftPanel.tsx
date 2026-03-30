@@ -150,7 +150,7 @@ function ComponentsTab() {
           <GlobalComponentGroup search={search} />
         )}
         <ComponentGroup title="Layout" types={['section', 'container', 'grid', 'flex']} search={search} />
-        <ComponentGroup title="Basic" types={['heading', 'paragraph', 'button', 'image', 'icon', 'divider', 'spacer']} search={search} />
+        <ComponentGroup title="Basic" types={['heading', 'paragraph', 'button', 'image', 'icon', 'divider', 'spacer', 'html']} search={search} />
         <ComponentGroup title="Advanced" types={['navbar', 'hero', 'card', 'pricing', 'features', 'footer', 'collection-list']} search={search} />
       </div>
     </>
@@ -299,6 +299,8 @@ function DraggableComponent({ type }: { type: keyof typeof COMPONENT_REGISTRY })
         return <div className="w-full h-12 flex gap-1 p-1"><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-accent-primary/20 rounded" /></div><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1 scale-110 z-10 shadow-xl"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-accent-primary/40 rounded" /></div><div className="flex-1 bg-zinc-800 border border-zinc-700 rounded flex flex-col items-center p-1 gap-1"><div className="w-full h-1 bg-zinc-700 rounded-full" /><div className="w-1/2 h-2 bg-accent-primary/20 rounded" /></div></div>;
       case 'features':
         return <div className="w-full h-12 grid grid-cols-3 gap-1 p-1"><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /><div className="bg-zinc-800 rounded border border-zinc-700" /></div>;
+      case 'html':
+        return <div className="w-full h-12 flex items-center justify-center bg-zinc-800 rounded border border-zinc-700"><CodeIcon className="w-4 h-4 text-zinc-500" /></div>;
       default:
         return <div className="w-full h-12 flex items-center justify-center"><Icon className="w-5 h-5 text-zinc-600" /></div>;
     }
