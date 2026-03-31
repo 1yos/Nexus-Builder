@@ -492,9 +492,15 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
   };
 
   const handleLinkClick = (e: React.MouseEvent, href: string, type: string) => {
-    if (type === 'internal') {
+    const isInternalPage = pages.some(p => p.id === href);
+    if (type === 'internal' || isInternalPage) {
       e.preventDefault();
       setActivePage(href);
+    } else {
+      e.preventDefault();
+      if (isPreview && href && href !== '#') {
+        window.open(href, '_blank');
+      }
     }
   };
 

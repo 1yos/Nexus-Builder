@@ -51,7 +51,10 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
       typographyStyles = `font-size: var(--token-${tokenId}-font-size); font-weight: var(--token-${tokenId}-font-weight); font-family: var(--token-${tokenId}-font-family); `;
     }
 
-    const finalStyles = (typographyStyles + stylesString).trim();
+    let finalStyles = (typographyStyles + stylesString).trim();
+    if (finalStyles && !finalStyles.endsWith(';')) {
+      finalStyles += ';';
+    }
     
     let tag = 'div';
     const props: string[] = [];
@@ -111,15 +114,23 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
         tag = 'div';
         break;
       case 'html':
-        tag = 'div';
+        tag = 'iframe';
         break;
     }
     
-    const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
     let children = el.children ? generateHTML(el.children, pages, folders, isStaticExport) : (el.props.text || '');
     
     if (el.type === 'html') {
-      children = el.props.htmlContent || '';
+      const escapedHtml = (el.props.htmlContent || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+      props.push(`srcdoc="${escapedHtml}"`);
+      props.push(`sandbox="allow-scripts allow-same-origin allow-popups"`);
+      finalStyles = `border: none; width: 100%; height: 100%; ${finalStyles}`;
+      children = '';
     } else if (el.type === 'navbar') {
       const logo = el.props.logoType === 'image' 
         ? `<img src="${el.props.logoSrc}" alt="Logo" style="height: 32px;" />`
@@ -170,6 +181,8 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
     } else if (el.type === 'divider' || el.type === 'spacer') {
       children = '';
     }
+    
+    const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
     
     if (el.type === 'image' || el.type === 'divider') {
       return `<${tag} style="${finalStyles}"${propsString} />`;
@@ -969,7 +982,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; height: auto; }`;
 
-    site['src/components/HTMLRenderer.tsx'] = `import React, { useEffect, useState } from 'react';
+    site['src/components/HTMLRenderer.tsx'] = `'use client';
+import React, { useEffect, useState } from 'react';
 
 export function HTMLRenderer({ html, className, style }: { html: string, className?: string, style?: React.CSSProperties }) {
   const [debouncedHtml, setDebouncedHtml] = useState(html);
@@ -1299,7 +1313,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }`;
 
-    site['components/HTMLRenderer.tsx'] = `import React, { useEffect, useState } from 'react';
+    site['components/HTMLRenderer.tsx'] = `'use client';
+import React, { useEffect, useState } from 'react';
 
 export function HTMLRenderer({ html, className, style }: { html: string, className?: string, style?: React.CSSProperties }) {
   const [debouncedHtml, setDebouncedHtml] = useState(html);
