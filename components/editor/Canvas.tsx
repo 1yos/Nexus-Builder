@@ -7,6 +7,7 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
+import { HTMLRenderer } from './HTMLRenderer';
 import { 
   Trash2, 
   Copy, 
@@ -999,9 +1000,10 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
           <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
             {badge}
             {actionButtons}
-            <div 
+            <HTMLRenderer 
+              html={element.props.htmlContent || ''} 
               className="w-full h-full"
-              dangerouslySetInnerHTML={{ __html: element.props.htmlContent || '' }} 
+              style={{ pointerEvents: isPreview ? 'auto' : 'none' }}
             />
           </motion.div>
         );

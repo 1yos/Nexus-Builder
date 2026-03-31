@@ -446,15 +446,20 @@ export function generateReact(
       case 'icon':
       case 'divider':
       case 'spacer':
-      case 'html':
         tag = 'motion.div';
+        break;
+      case 'html':
+        tag = 'HTMLRenderer';
+        isMotion = false;
         break;
       default:
         tag = 'motion.div';
     }
 
-    props.push(getAnimationProps(el));
-    props.push(getInteractionProps(el));
+    if (isMotion) {
+      props.push(getAnimationProps(el));
+      props.push(getInteractionProps(el));
+    }
 
     const otherProps = Object.entries(el.props || {})
       .filter(([k]) => !['text', 'level', 'href', 'src', 'alt', 'links', 'logoText', 'logoSrc', 'logoType', 'copyright', 'icon', 'htmlContent'].includes(k))
@@ -518,7 +523,7 @@ export function generateReact(
 
     if (el.type === 'html') {
       children = '';
-      props.push(`dangerouslySetInnerHTML={{ __html: ${JSON.stringify(el.props.htmlContent || '')} }}`);
+      props.push(`html={${JSON.stringify(el.props.htmlContent || '')}}`);
     } else if (el.type === 'collection-list') {
       const collectionId = el.props.collectionId;
       if (collectionId) {
@@ -702,8 +707,14 @@ export function generateReact(
     return check(el);
   });
 
+  const hasHtmlComponent = elements.some(el => {
+    const check = (e: any): boolean => e.type === 'html' || (e.children && e.children.some(check));
+    return check(el);
+  });
+
   const cmsPath = framework === 'nextjs' ? '@/data/cms.json' : '../data/cms.json';
   const cmsImport = (hasCollectionList || isDynamicPage) ? `import cmsData from '${cmsPath}';\n` : '';
+  const htmlRendererImport = hasHtmlComponent ? (framework === 'nextjs' ? `import { HTMLRenderer } from '@/components/HTMLRenderer';\n` : `import { HTMLRenderer } from '../components/HTMLRenderer';\n`) : '';
 
   if (!isPage) {
     return `'use client';
@@ -711,7 +722,7 @@ import React, { useState } from 'react';
 ${linkImport}
 ${motionImport}
 import * as Icons from 'lucide-react';
-${cmsImport}${componentImports}
+${cmsImport}${htmlRendererImport}${componentImports}
 
 export default function ${componentName}() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -732,7 +743,7 @@ import React, { useState } from 'react';
 ${linkImport}
 ${motionImport}
 import * as Icons from 'lucide-react';
-${cmsImport}${componentImports}
+${cmsImport}${htmlRendererImport}${componentImports}
 
 export default function ${componentName}(${pageProps}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -957,6 +968,29 @@ ReactDom.createRoot(document.getElementById('root')!).render(
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #FFFFFF; background-color: #0A0A0F; }
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; height: auto; }`;
+
+    site['src/components/HTMLRenderer.tsx'] = `import React, { useEffect, useState } from 'react';
+
+export function HTMLRenderer({ html, className, style }: { html: string, className?: string, style?: React.CSSProperties }) {
+  const [debouncedHtml, setDebouncedHtml] = useState(html);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedHtml(html);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [html]);
+
+  return (
+    <iframe
+      srcDoc={debouncedHtml}
+      className={className}
+      style={{ border: 'none', width: '100%', height: '100%', ...style }}
+      sandbox="allow-scripts allow-same-origin allow-popups"
+      title="HTML Content"
+    />
+  );
+}`;
 
     // Extract reusable components
     const componentsToExtract = ['navbar', 'footer'];
@@ -1263,6 +1297,29 @@ import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}`;
+
+    site['components/HTMLRenderer.tsx'] = `import React, { useEffect, useState } from 'react';
+
+export function HTMLRenderer({ html, className, style }: { html: string, className?: string, style?: React.CSSProperties }) {
+  const [debouncedHtml, setDebouncedHtml] = useState(html);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedHtml(html);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [html]);
+
+  return (
+    <iframe
+      srcDoc={debouncedHtml}
+      className={className}
+      style={{ border: 'none', width: '100%', height: '100%', ...style }}
+      sandbox="allow-scripts allow-same-origin allow-popups"
+      title="HTML Content"
+    />
+  );
 }`;
 
     // Extract reusable components
