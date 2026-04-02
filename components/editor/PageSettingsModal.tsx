@@ -11,20 +11,28 @@ interface PageSettingsModalProps {
 }
 
 export function PageSettingsModal({ pageId, onClose }: PageSettingsModalProps) {
-  const { pages, collections, renamePage, updatePage } = useBuilderStore();
+  const { pages, collections, updatePage } = useBuilderStore();
   const page = pages.find(p => p.id === pageId);
   
   const [name, setName] = useState(page?.name || '');
   const [isDynamic, setIsDynamic] = useState(page?.isDynamic || false);
   const [collectionId, setCollectionId] = useState(page?.collectionId || '');
+  const [seo, setSeo] = useState(page?.seo || {
+    title: '',
+    description: '',
+    ogImage: '',
+    noIndex: false
+  });
 
   if (!page) return null;
 
   const handleSave = () => {
-    renamePage(pageId, name);
-    // We need an updatePage action in the store if we want to update other fields
-    // Let's check if updatePage exists or if we should add it.
-    // Based on useBuilderStore.ts view, it doesn't have updatePage yet.
+    updatePage(pageId, { 
+      name, 
+      isDynamic, 
+      collectionId,
+      seo 
+    });
     onClose();
   };
 
@@ -41,7 +49,7 @@ export function PageSettingsModal({ pageId, onClose }: PageSettingsModalProps) {
           </button>
         </div>
         
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
           <div className="space-y-2">
             <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Page Name</label>
             <input
@@ -51,6 +59,64 @@ export function PageSettingsModal({ pageId, onClose }: PageSettingsModalProps) {
               className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary transition-all"
               placeholder="e.g. Home, About, Blog Post"
             />
+          </div>
+
+          <div className="pt-4 border-t border-zinc-800 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Globe className="w-4 h-4 text-accent-primary" />
+              <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-wider">SEO & Meta</h3>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Meta Title</label>
+              <input
+                type="text"
+                value={seo.title}
+                onChange={(e) => setSeo({ ...seo, title: e.target.value })}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary transition-all"
+                placeholder="Page title for search engines"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Meta Description</label>
+              <textarea
+                value={seo.description}
+                onChange={(e) => setSeo({ ...seo, description: e.target.value })}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary transition-all min-h-[80px] resize-none"
+                placeholder="Brief summary of the page content"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">OG Image URL</label>
+              <input
+                type="text"
+                value={seo.ogImage}
+                onChange={(e) => setSeo({ ...seo, ogImage: e.target.value })}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary transition-all"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <label className="text-xs font-bold text-zinc-200">Hide from Search Engines</label>
+                <p className="text-[10px] text-zinc-500">Adds noindex tag to this page.</p>
+              </div>
+              <button
+                onClick={() => setSeo({ ...seo, noIndex: !seo.noIndex })}
+                className={cn(
+                  "w-10 h-5 rounded-full transition-all relative",
+                  seo.noIndex ? "bg-red-500" : "bg-zinc-700"
+                )}
+              >
+                <div className={cn(
+                  "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
+                  seo.noIndex ? "left-6" : "left-1"
+                )} />
+              </button>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-zinc-800 space-y-4">
@@ -105,12 +171,7 @@ export function PageSettingsModal({ pageId, onClose }: PageSettingsModalProps) {
             Cancel
           </button>
           <button
-            onClick={() => {
-              renamePage(pageId, name);
-              // Use updatePage if it exists, otherwise we'll add it
-              (useBuilderStore.getState() as any).updatePage?.(pageId, { isDynamic, collectionId });
-              onClose();
-            }}
+            onClick={handleSave}
             className="px-6 py-2 bg-accent-primary hover:bg-accent-primary text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-accent-primary/20 transition-all"
           >
             Save Changes

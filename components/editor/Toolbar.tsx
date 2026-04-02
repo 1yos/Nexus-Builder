@@ -34,11 +34,32 @@ export default function Toolbar() {
     setPreview,
     presence,
     editorMode,
-    setEditorMode
+    setEditorMode,
+    selectedElementId,
+    elements
   } = useBuilderStore();
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
+
+  const findElement = (items: any[], id: string): any => {
+    for (const item of items) {
+      if (item.id === id) return item;
+      if (item.children) {
+        const found = findElement(item.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
+
+  const hasOverrides = (mode: 'tablet' | 'mobile') => {
+    if (!selectedElement) return false;
+    const responsive = selectedElement.responsiveStyles || {};
+    return !!(responsive[mode] && Object.keys(responsive[mode]).length > 0);
+  };
 
   return (
     <header className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 z-50">
@@ -104,12 +125,14 @@ export default function Toolbar() {
           onClick={() => setDeviceMode('tablet')} 
           icon={Tablet} 
           label="Tablet" 
+          hasOverride={hasOverrides('tablet')}
         />
         <DeviceButton 
           active={deviceMode === 'mobile'} 
           onClick={() => setDeviceMode('mobile')} 
           icon={Smartphone} 
           label="Mobile" 
+          hasOverride={hasOverrides('mobile')}
         />
       </div>
 
@@ -152,17 +175,32 @@ export default function Toolbar() {
   );
 }
 
-function DeviceButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: any; label: string }) {
+function DeviceButton({ 
+  active, 
+  onClick, 
+  icon: Icon, 
+  label,
+  hasOverride
+}: { 
+  active: boolean; 
+  onClick: () => void; 
+  icon: any; 
+  label: string;
+  hasOverride?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
       className={`
-        flex items-center gap-2 px-3 py-1.5 rounded-md transition-all
+        flex items-center gap-2 px-3 py-1.5 rounded-md transition-all relative
         ${active ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}
       `}
       title={label}
     >
       <Icon className="w-4 h-4" />
+      {hasOverride && (
+        <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-accent-primary rounded-full border border-zinc-900" />
+      )}
     </button>
   );
 }

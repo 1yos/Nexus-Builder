@@ -8,9 +8,19 @@ interface StyleInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  isOverridden?: boolean;
+  onClearOverride?: () => void;
 }
 
-export function StyleInput({ label, type, value, onChange, placeholder }: StyleInputProps) {
+export function StyleInput({ 
+  label, 
+  type, 
+  value, 
+  onChange, 
+  placeholder,
+  isOverridden,
+  onClearOverride
+}: StyleInputProps) {
   const { tokens } = useBuilderStore();
   const filteredTokens = tokens.filter(t => t.type === type);
   const isToken = value?.startsWith('var(--token-');
@@ -22,7 +32,22 @@ export function StyleInput({ label, type, value, onChange, placeholder }: StyleI
 
   return (
     <div className="space-y-1.5">
-      <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider flex items-center gap-1.5">
+          {label}
+          {isOverridden && (
+            <span className="w-1 h-1 rounded-full bg-accent-primary animate-pulse" title="Overridden for this device" />
+          )}
+        </label>
+        {isOverridden && onClearOverride && (
+          <button 
+            onClick={onClearOverride}
+            className="text-[9px] text-accent-primary hover:underline font-bold uppercase tracking-tighter"
+          >
+            Reset
+          </button>
+        )}
+      </div>
       <div className="flex flex-col gap-2">
         {filteredTokens.length > 0 && (
           <TokenSelector

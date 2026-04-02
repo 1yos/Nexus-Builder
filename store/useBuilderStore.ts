@@ -131,6 +131,12 @@ export interface Page {
   order: number;
   isDynamic?: boolean;
   collectionId?: string;
+  seo?: {
+    title?: string;
+    description?: string;
+    ogImage?: string;
+    noIndex?: boolean;
+  };
 }
 
 export interface Folder {
@@ -166,7 +172,7 @@ interface BuilderState {
   deviceMode: DeviceMode;
   editorMode: EditorMode;
   isPreview: boolean;
-  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens' | 'cms';
+  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages';
   rightPanelTab: 'style' | 'content' | 'layout' | 'animations' | 'interactions';
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
@@ -196,7 +202,7 @@ interface BuilderState {
   moveElementTo: (id: string, parentId: string | null, index: number) => void;
   setDeviceMode: (mode: DeviceMode) => void;
   setEditorMode: (mode: EditorMode) => void;
-  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms') => void;
+  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages') => void;
   setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations' | 'interactions') => void;
   setLeftPanelCollapsed: (collapsed: boolean) => void;
   setRightPanelCollapsed: (collapsed: boolean) => void;
@@ -599,7 +605,7 @@ export const useBuilderStore = create<BuilderState>()(
 
       setEditorMode: (mode) => set({ editorMode: mode }),
 
-      setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
+      setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages') => set({ leftPanelTab: tab }),
       
       setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 

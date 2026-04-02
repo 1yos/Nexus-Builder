@@ -134,7 +134,7 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
     } else if (el.type === 'navbar') {
       const logo = el.props.logoType === 'image' 
         ? `<img src="${el.props.logoSrc}" alt="Logo" style="height: 32px;" />`
-        : `<div style="font-weight: bold; font-size: 1.25rem;">${el.props.logoText || 'NEXUS'}</div>`;
+        : `<div style="font-weight: bold; font-size: 1.25rem; letter-spacing: -0.025em;">${el.props.logoText || 'NEXUS'}</div>`;
       
       // Dynamic links from pages and folders
       const dynamicLinks = ([
@@ -166,13 +166,36 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
       const links = groupedLinks.map((item: any) => {
         if (item.type === 'folder') {
           return item.pages.map((p: any) => 
-            `<a href="${getHref(p.href)}" style="margin-left: 1.5rem; text-decoration: none; color: inherit;">${p.name}</a>`
+            `<a href="${getHref(p.href)}" style="margin-left: 1.5rem; text-decoration: none; color: inherit; font-size: 14px; font-weight: 500;">${p.name}</a>`
           ).join('');
         }
-        return `<a href="${getHref(item.href)}" style="margin-left: 1.5rem; text-decoration: none; color: inherit;">${item.name}</a>`;
+        return `<a href="${getHref(item.href)}" style="margin-left: 1.5rem; text-decoration: none; color: inherit; font-size: 14px; font-weight: 500;">${item.name}</a>`;
       }).join('');
       
-      children = `<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">${logo}<div style="display: flex;">${links}</div></div>`;
+      const hSize = parseInt(String(el.props.hamburgerSize)) || 24;
+      const hColor = el.props.hamburgerColor || '#000';
+      const menuId = `mobile-menu-${el.id}`;
+      
+      children = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; height: 100%; min-height: 64px;">
+          <div style="display: flex; align-items: center;">${logo}</div>
+          <div class="desktop-links" style="display: flex; align-items: center;">${links}</div>
+          <button class="mobile-menu-toggle" data-mobile-menu-toggle data-target="${menuId}" style="display: none; background: none; border: none; cursor: pointer; padding: 8px;">
+            <svg width="${hSize}" height="${hSize}" viewBox="0 0 24 24" fill="none" stroke="${hColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+        </div>
+        <div id="${menuId}" class="mobile-menu hidden" style="display: none; flex-direction: column; background-color: inherit; border-top: 1px solid rgba(0,0,0,0.1); padding: 20px;">
+          ${links.replace(/margin-left: 1.5rem;/g, 'margin-bottom: 1rem; margin-left: 0;')}
+        </div>
+        <style>
+          @media (max-width: 768px) {
+            .desktop-links { display: none !important; }
+            .mobile-menu-toggle { display: block !important; }
+            .mobile-menu:not(.hidden) { display: flex !important; }
+          }
+          .hidden { display: none !important; }
+        </style>
+      `;
     } else if (el.type === 'footer') {
       children = `<div>${el.props.copyright || ''}</div>`;
     } else if (el.type === 'icon') {
@@ -192,94 +215,96 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
   }).join('\n');
 }
 
-function stylesToTailwind(styles: Record<string, string>): string {
-  const classes: string[] = [];
-  for (const [key, value] of Object.entries(styles)) {
-    if (!value) continue;
-    
-    const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-    
-    if (key === 'display') {
-      classes.push(value);
-      continue;
+function stylesToTailwind(styles: Record<string, string>, responsiveStyles?: Record<string, Record<string, string>>): string {
+  const processStyles = (s: Record<string, string>, devicePrefix = ''): string[] => {
+    const classes: string[] = [];
+    for (const [key, value] of Object.entries(s)) {
+      if (!value) continue;
+      
+      const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+      let tailwindClass = '';
+      
+      if (key === 'display') {
+        tailwindClass = value;
+      } else if (key === 'flexDirection') {
+        if (value === 'row') tailwindClass = 'flex-row';
+        else if (value === 'column') tailwindClass = 'flex-col';
+        else if (value === 'row-reverse') tailwindClass = 'flex-row-reverse';
+        else if (value === 'column-reverse') tailwindClass = 'flex-col-reverse';
+      } else if (key === 'justifyContent') {
+        if (value === 'flex-start') tailwindClass = 'justify-start';
+        else if (value === 'flex-end') tailwindClass = 'justify-end';
+        else if (value === 'center') tailwindClass = 'justify-center';
+        else if (value === 'space-between') tailwindClass = 'justify-between';
+        else if (value === 'space-around') tailwindClass = 'justify-around';
+        else if (value === 'space-evenly') tailwindClass = 'justify-evenly';
+      } else if (key === 'alignItems') {
+        if (value === 'flex-start') tailwindClass = 'items-start';
+        else if (value === 'flex-end') tailwindClass = 'items-end';
+        else if (value === 'center') tailwindClass = 'items-center';
+        else if (value === 'baseline') tailwindClass = 'items-baseline';
+        else if (value === 'stretch') tailwindClass = 'items-stretch';
+      } else if (key === 'textAlign') {
+        if (value === 'left') tailwindClass = 'text-left';
+        else if (value === 'center') tailwindClass = 'text-center';
+        else if (value === 'right') tailwindClass = 'text-right';
+        else if (value === 'justify') tailwindClass = 'text-justify';
+      } else if (key === 'fontWeight') {
+        if (value === '100') tailwindClass = 'font-thin';
+        else if (value === '200') tailwindClass = 'font-extralight';
+        else if (value === '300') tailwindClass = 'font-light';
+        else if (value === '400' || value === 'normal') tailwindClass = 'font-normal';
+        else if (value === '500') tailwindClass = 'font-medium';
+        else if (value === '600') tailwindClass = 'font-semibold';
+        else if (value === '700' || value === 'bold') tailwindClass = 'font-bold';
+        else if (value === '800') tailwindClass = 'font-extrabold';
+        else if (value === '900') tailwindClass = 'font-black';
+      } else {
+        let prefix = '';
+        if (key === 'backgroundColor') prefix = 'bg';
+        else if (key === 'color') prefix = 'text';
+        else if (key === 'fontSize') prefix = 'text';
+        else if (key === 'padding') prefix = 'p';
+        else if (key === 'paddingTop') prefix = 'pt';
+        else if (key === 'paddingRight') prefix = 'pr';
+        else if (key === 'paddingBottom') prefix = 'pb';
+        else if (key === 'paddingLeft') prefix = 'pl';
+        else if (key === 'margin') prefix = 'm';
+        else if (key === 'marginTop') prefix = 'mt';
+        else if (key === 'marginRight') prefix = 'mr';
+        else if (key === 'marginBottom') prefix = 'mb';
+        else if (key === 'marginLeft') prefix = 'ml';
+        else if (key === 'width') prefix = 'w';
+        else if (key === 'height') prefix = 'h';
+        else if (key === 'maxWidth') prefix = 'max-w';
+        else if (key === 'minHeight') prefix = 'min-h';
+        else if (key === 'borderRadius') prefix = 'rounded';
+        else if (key === 'border') prefix = 'border';
+        else if (key === 'gap') prefix = 'gap';
+        else if (key === 'boxShadow') prefix = 'shadow';
+        else prefix = kebabKey;
+        
+        const formattedValue = value.replace(/\s+/g, '_');
+        
+        if (['bg', 'text', 'p', 'pt', 'pr', 'pb', 'pl', 'm', 'mt', 'mr', 'mb', 'ml', 'w', 'h', 'max-w', 'min-h', 'rounded', 'border', 'gap', 'shadow'].includes(prefix)) {
+          tailwindClass = `${prefix}-[${formattedValue}]`;
+        } else {
+          tailwindClass = `[${kebabKey}:${formattedValue}]`;
+        }
+      }
+      
+      if (tailwindClass) {
+        classes.push(devicePrefix + tailwindClass);
+      }
     }
-    if (key === 'flexDirection') {
-      if (value === 'row') classes.push('flex-row');
-      if (value === 'column') classes.push('flex-col');
-      if (value === 'row-reverse') classes.push('flex-row-reverse');
-      if (value === 'column-reverse') classes.push('flex-col-reverse');
-      continue;
-    }
-    if (key === 'justifyContent') {
-      if (value === 'flex-start') classes.push('justify-start');
-      if (value === 'flex-end') classes.push('justify-end');
-      if (value === 'center') classes.push('justify-center');
-      if (value === 'space-between') classes.push('justify-between');
-      if (value === 'space-around') classes.push('justify-around');
-      if (value === 'space-evenly') classes.push('justify-evenly');
-      continue;
-    }
-    if (key === 'alignItems') {
-      if (value === 'flex-start') classes.push('items-start');
-      if (value === 'flex-end') classes.push('items-end');
-      if (value === 'center') classes.push('items-center');
-      if (value === 'baseline') classes.push('items-baseline');
-      if (value === 'stretch') classes.push('items-stretch');
-      continue;
-    }
-    if (key === 'textAlign') {
-      if (value === 'left') classes.push('text-left');
-      if (value === 'center') classes.push('text-center');
-      if (value === 'right') classes.push('text-right');
-      if (value === 'justify') classes.push('text-justify');
-      continue;
-    }
-    if (key === 'fontWeight') {
-      if (value === '100') classes.push('font-thin');
-      if (value === '200') classes.push('font-extralight');
-      if (value === '300') classes.push('font-light');
-      if (value === '400' || value === 'normal') classes.push('font-normal');
-      if (value === '500') classes.push('font-medium');
-      if (value === '600') classes.push('font-semibold');
-      if (value === '700' || value === 'bold') classes.push('font-bold');
-      if (value === '800') classes.push('font-extrabold');
-      if (value === '900') classes.push('font-black');
-      continue;
-    }
-    
-    let prefix = '';
-    if (key === 'backgroundColor') prefix = 'bg';
-    else if (key === 'color') prefix = 'text';
-    else if (key === 'fontSize') prefix = 'text';
-    else if (key === 'padding') prefix = 'p';
-    else if (key === 'paddingTop') prefix = 'pt';
-    else if (key === 'paddingRight') prefix = 'pr';
-    else if (key === 'paddingBottom') prefix = 'pb';
-    else if (key === 'paddingLeft') prefix = 'pl';
-    else if (key === 'margin') prefix = 'm';
-    else if (key === 'marginTop') prefix = 'mt';
-    else if (key === 'marginRight') prefix = 'mr';
-    else if (key === 'marginBottom') prefix = 'mb';
-    else if (key === 'marginLeft') prefix = 'ml';
-    else if (key === 'width') prefix = 'w';
-    else if (key === 'height') prefix = 'h';
-    else if (key === 'maxWidth') prefix = 'max-w';
-    else if (key === 'minHeight') prefix = 'min-h';
-    else if (key === 'borderRadius') prefix = 'rounded';
-    else if (key === 'border') prefix = 'border';
-    else if (key === 'gap') prefix = 'gap';
-    else if (key === 'boxShadow') prefix = 'shadow';
-    else prefix = kebabKey;
-    
-    const formattedValue = value.replace(/\s+/g, '_');
-    
-    if (['bg', 'text', 'p', 'pt', 'pr', 'pb', 'pl', 'm', 'mt', 'mr', 'mb', 'ml', 'w', 'h', 'max-w', 'min-h', 'rounded', 'border', 'gap', 'shadow'].includes(prefix)) {
-      classes.push(`${prefix}-[${formattedValue}]`);
-    } else {
-      classes.push(`[${kebabKey}:${formattedValue}]`);
-    }
-  }
-  return classes.join(' ');
+    return classes;
+  };
+
+  const baseClasses = processStyles(styles);
+  const tabletClasses = responsiveStyles?.tablet ? processStyles(responsiveStyles.tablet, 'max-lg:') : [];
+  const mobileClasses = responsiveStyles?.mobile ? processStyles(responsiveStyles.mobile, 'max-md:') : [];
+  
+  return [...baseClasses, ...tabletClasses, ...mobileClasses].join(' ');
 }
 
 /**
@@ -485,7 +510,7 @@ export function generateReact(
     
     let styleProp = '';
     if (framework === 'nextjs') {
-      let tailwindClasses = stylesToTailwind(el.styles || {});
+      let tailwindClasses = stylesToTailwind(el.styles || {}, el.responsiveStyles);
       
       // Apply typography token classes if present
       if (el.styles?.typographyToken) {
@@ -789,7 +814,10 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], t
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${page.name}</title>
+    <title>${page.seo?.title || page.name}</title>
+    ${page.seo?.description ? `<meta name="description" content="${page.seo.description}">` : ''}
+    ${page.seo?.ogImage ? `<meta property="og:image" content="${page.seo.ogImage}">` : ''}
+    ${page.seo?.noIndex ? `<meta name="robots" content="noindex">` : ''}
     <style>
         :root {
             ${tokenStyles}
@@ -808,6 +836,20 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], t
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
       lucide.createIcons();
+      
+      // Mobile menu toggle logic
+      document.addEventListener('DOMContentLoaded', () => {
+        const menuButtons = document.querySelectorAll('[data-mobile-menu-toggle]');
+        menuButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-target');
+            const menu = document.getElementById(targetId);
+            if (menu) {
+              menu.classList.toggle('hidden');
+            }
+          });
+        });
+      });
     </script>
 </body>
 </html>`;
@@ -1401,16 +1443,62 @@ export function HTMLRenderer({ html, className, style }: { html: string, classNa
         const collection = collections.find(c => c.id === page.collectionId);
         if (collection) {
           const path = `app/${collection.slug}/[slug]/page.tsx`;
-          const reactCode = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, componentName, 'nextjs', true, extractedComponents, true);
+          const clientCompName = `${componentName}Client`;
+          const reactCode = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, clientCompName, 'nextjs', true, extractedComponents, true);
           
-          const cleanedReactCode = reactCode.replace(`import cmsData from '@/data/cms.json';\n`, '');
+          site[`app/${collection.slug}/[slug]/${clientCompName}.tsx`] = reactCode;
           
-          site[path] = `import cmsData from '@/data/cms.json';\nimport { notFound } from 'next/navigation';\n\nexport function generateStaticParams() {\n  return cmsData.entries.filter(e => e.collectionId === '${collection.id}').map(entry => ({\n    slug: entry.id,\n  }));\n}\n\n${cleanedReactCode.replace(`export default function ${componentName}({ entry }: { entry: any }) {`, `export default function ${componentName}({ params }: { params: { slug: string } }) {\n  const entry = cmsData.entries.find(e => e.id === params.slug);\n  if (!entry) return notFound();\n`)}`;
+          site[path] = `import cmsData from '@/data/cms.json';
+import { notFound } from 'next/navigation';
+import ${clientCompName} from './${clientCompName}';
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const entry = cmsData.entries.find(e => e.id === params.slug);
+  if (!entry) return { title: "${page.seo?.title || page.name}" };
+  
+  return {
+    title: entry.name || "${page.seo?.title || page.name}",
+    description: "${page.seo?.description || ''}",
+  };
+}
+
+export function generateStaticParams() {
+  return cmsData.entries.filter(e => e.collectionId === '${collection.id}').map(entry => ({
+    slug: entry.id,
+  }));
+}
+
+export default function Page({ params }: { params: { slug: string } }) {
+  const entry = cmsData.entries.find(e => e.id === params.slug);
+  if (!entry) return notFound();
+  
+  return <${clientCompName} entry={entry} />;
+}`;
         }
       } else {
         const slug = getSlug(page.name);
-        const path = isHomePage(page, pages) ? 'app/page.tsx' : `app/${slug}/page.tsx`;
-        site[path] = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, componentName, 'nextjs', true, extractedComponents, false);
+        const isHome = isHomePage(page, pages);
+        const dirPath = isHome ? 'app' : `app/${slug}`;
+        
+        const clientCompName = `${componentName}Client`;
+        const clientCode = generateReact(page.elements, pages, folders, globalComponents, codeOverrides, clientCompName, 'nextjs', true, extractedComponents, false);
+        
+        site[`${dirPath}/${clientCompName}.tsx`] = clientCode;
+        
+        site[`${dirPath}/page.tsx`] = `import ${clientCompName} from './${clientCompName}';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "${page.seo?.title || page.name}",
+  ${page.seo?.description ? `description: "${page.seo.description}",` : ''}
+  ${page.seo?.ogImage ? `openGraph: { images: ["${page.seo.ogImage}"] },` : ''}
+  ${page.seo?.noIndex ? `robots: { index: false },` : ''}
+};
+
+export default function Page() {
+  return <${clientCompName} />;
+}`;
       }
     });
 

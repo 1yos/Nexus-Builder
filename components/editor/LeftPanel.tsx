@@ -5,9 +5,10 @@ import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, LucideIcon } from 'lucide-react';
+import { Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, LucideIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
+import { PRESETS } from '@/lib/presets';
 
 export default function LeftPanel() {
   const { leftPanelTab, setLeftPanelTab, leftPanelCollapsed, setLeftPanelCollapsed } = useBuilderStore();
@@ -62,7 +63,7 @@ export default function LeftPanel() {
         <ChevronLeft className="w-4 h-4" />
       </button>
 
-      <div className="grid grid-cols-5 border-b border-zinc-800">
+      <div className="grid grid-cols-6 border-b border-zinc-800">
         <button
           onClick={() => setLeftPanelTab('components')}
           className={cn(
@@ -71,7 +72,17 @@ export default function LeftPanel() {
           )}
         >
           <Box className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Components</span>
+          <span className="truncate w-full text-center px-1">Elements</span>
+        </button>
+        <button
+          onClick={() => setLeftPanelTab('library')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            leftPanelTab === 'library' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate w-full text-center px-1">Library</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('layers')}
@@ -103,13 +114,25 @@ export default function LeftPanel() {
           <Palette className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate w-full text-center px-1">Theme</span>
         </button>
+        <button
+          onClick={() => setLeftPanelTab('pages')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            leftPanelTab === 'pages' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <Globe className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate w-full text-center px-1">Pages</span>
+        </button>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
         {leftPanelTab === 'components' && <ComponentsTab />}
+        {leftPanelTab === 'library' && <LibraryTab />}
         {leftPanelTab === 'layers' && <LayersTab />}
         {leftPanelTab === 'code' && <CodePanel />}
         {leftPanelTab === 'tokens' && <ThemeTab />}
+        {leftPanelTab === 'pages' && <PagesTab />}
       </div>
     </aside>
   );
@@ -724,6 +747,175 @@ function LayerItem({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function DraggableLibraryItem({ preset }: { preset: any }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `preset-${preset.id}`,
+    data: {
+      type: preset.element.type,
+      isLibraryItem: true,
+      presetId: preset.id,
+      element: preset.element
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "flex flex-col p-3 rounded-xl border border-zinc-800 bg-zinc-900/50",
+        "hover:bg-zinc-800 hover:border-zinc-700 transition-all cursor-grab active:cursor-grabbing group",
+        isDragging && "opacity-50 ring-2 ring-accent-primary"
+      )}
+    >
+      <div className="mb-3 overflow-hidden rounded-lg bg-zinc-950/50 group-hover:bg-zinc-950 transition-colors h-20 flex items-center justify-center border border-zinc-800/50">
+        <Sparkles className="w-6 h-6 text-accent-primary/30 group-hover:text-accent-primary/50 transition-colors" />
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-wider group-hover:text-white transition-colors">
+          {preset.name}
+        </span>
+        <span className="text-[8px] text-zinc-500 font-medium uppercase tracking-tighter">
+          {preset.category}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function LibraryTab() {
+  const [search, setSearch] = React.useState('');
+  const categories = ['Hero', 'Features', 'Pricing', 'Testimonials', 'Footer'] as const;
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-zinc-800">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+          <input
+            type="text"
+            placeholder="Search library..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-md py-1.5 pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent-primary transition-all"
+          />
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
+        {categories.map(category => {
+          const filteredPresets = PRESETS.filter(p => 
+            p.category === category && 
+            p.name.toLowerCase().includes(search.toLowerCase())
+          );
+          if (filteredPresets.length === 0) return null;
+
+          return (
+            <div key={category} className="space-y-4">
+              <h3 className="text-[10px] font-bold text-zinc-500 uppercase px-1 tracking-widest flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-accent-primary" />
+                {category}
+              </h3>
+              <div className="grid grid-cols-1 gap-3">
+                {filteredPresets.map(preset => (
+                  <DraggableLibraryItem key={preset.id} preset={preset} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PagesTab() {
+  const { pages, activePageId, setActivePage, addPage, removePage, updatePage } = useBuilderStore();
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [newPageName, setNewPageName] = React.useState('');
+
+  const handleAddPage = () => {
+    if (!newPageName.trim()) return;
+    addPage(newPageName);
+    setNewPageName('');
+    setIsAdding(false);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Site Pages</h3>
+        <button
+          onClick={() => setIsAdding(true)}
+          className="p-1.5 bg-accent-primary/10 hover:bg-accent-primary text-accent-primary hover:text-white rounded-md transition-all"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+        {isAdding && (
+          <div className="p-2 space-y-2 bg-zinc-800/50 rounded-lg border border-accent-primary/30 mb-2">
+            <input
+              autoFocus
+              type="text"
+              placeholder="Page name..."
+              value={newPageName}
+              onChange={(e) => setNewPageName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddPage()}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddPage}
+                className="flex-1 py-1 bg-accent-primary text-white text-[10px] font-bold uppercase rounded"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => setIsAdding(false)}
+                className="flex-1 py-1 bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {pages.sort((a, b) => a.order - b.order).map(page => (
+          <div
+            key={page.id}
+            onClick={() => setActivePage(page.id)}
+            className={cn(
+              "group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all",
+              activePageId === page.id ? "bg-accent-primary/10 text-accent-primary border border-accent-primary/20" : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 border border-transparent"
+            )}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Globe className={cn("w-3.5 h-3.5 shrink-0", activePageId === page.id ? "text-accent-primary" : "text-zinc-500")} />
+              <span className="text-xs font-medium truncate">{page.name}</span>
+            </div>
+            
+            {pages.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Are you sure you want to delete "${page.name}"?`)) {
+                    removePage(page.id);
+                  }
+                }}
+                className="p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

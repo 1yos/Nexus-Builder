@@ -139,6 +139,26 @@ export default function RightPanel() {
 
   const currentStyles = getCurrentStyles();
 
+  const isStyleOverridden = (key: string) => {
+    if (deviceMode === 'desktop') return false;
+    const responsive = selectedElement?.responsiveStyles || {};
+    return !!(responsive[deviceMode] && responsive[deviceMode][key] !== undefined);
+  };
+
+  const handleClearOverride = (key: string) => {
+    if (deviceMode === 'desktop') return;
+    const responsiveStyles = selectedElement?.responsiveStyles || {};
+    const currentDeviceStyles = { ...(responsiveStyles[deviceMode] || {}) };
+    delete currentDeviceStyles[key];
+    
+    updateElement(selectedElement!.id, {
+      responsiveStyles: {
+        ...responsiveStyles,
+        [deviceMode]: currentDeviceStyles
+      }
+    });
+  };
+
   if (!selectedElement) {
     return (
       <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col items-center justify-center p-8 text-center relative group/sidebar">
@@ -581,6 +601,8 @@ export default function RightPanel() {
                           value={selectedElement.props.hamburgerColor || ''}
                           onChange={(val) => handlePropChange('hamburgerColor', val)}
                           placeholder="#000000"
+                          isOverridden={isStyleOverridden('hamburgerColor')}
+                          onClearOverride={() => handleClearOverride('hamburgerColor')}
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -698,6 +720,47 @@ export default function RightPanel() {
 
         {rightPanelTab === 'style' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-200">
+            {deviceMode !== 'desktop' && (
+              <PropertySection title="Device Overrides" icon={Activity}>
+                <div className="p-3 bg-accent-primary/5 border border-accent-primary/20 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-zinc-400 leading-relaxed">
+                      You are currently editing styles for <span className="text-accent-primary font-bold uppercase">{deviceMode}</span>.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        const responsive = selectedElement.responsiveStyles || {};
+                        const newResponsive = { ...responsive };
+                        delete newResponsive[deviceMode];
+                        updateElement(selectedElement.id, { responsiveStyles: newResponsive });
+                      }}
+                      className="text-[9px] text-zinc-500 hover:text-red-400 font-bold uppercase tracking-tighter transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  
+                  {Object.keys(selectedElement.responsiveStyles?.[deviceMode] || {}).length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.keys(selectedElement.responsiveStyles?.[deviceMode] || {}).map(key => (
+                        <div key={key} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-[9px] text-zinc-300 font-mono group">
+                          {key}
+                          <button 
+                            onClick={() => handleClearOverride(key)}
+                            className="text-zinc-600 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[9px] text-zinc-600 italic">No overrides for this device yet.</p>
+                  )}
+                </div>
+              </PropertySection>
+            )}
+
             <div className="space-y-2">
               <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Visual State</label>
               <div className="flex bg-zinc-800 rounded-md p-1 border border-zinc-700">
@@ -724,6 +787,8 @@ export default function RightPanel() {
                   value={currentStyles.typographyToken || ''}
                   onChange={(val) => handleStyleChange('typographyToken', val)}
                   placeholder="Select a token..."
+                  isOverridden={isStyleOverridden('typographyToken')}
+                  onClearOverride={() => handleClearOverride('typographyToken')}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -733,6 +798,8 @@ export default function RightPanel() {
                   value={currentStyles.fontSize || ''}
                   onChange={(val) => handleStyleChange('fontSize', val)}
                   placeholder="16px"
+                  isOverridden={isStyleOverridden('fontSize')}
+                  onClearOverride={() => handleClearOverride('fontSize')}
                 />
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Weight</label>
@@ -755,6 +822,8 @@ export default function RightPanel() {
                 value={currentStyles.color || ''}
                 onChange={(val) => handleStyleChange('color', val)}
                 placeholder="#000000"
+                isOverridden={isStyleOverridden('color')}
+                onClearOverride={() => handleClearOverride('color')}
               />
               <div className="space-y-1.5">
                 <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Alignment</label>
@@ -783,6 +852,8 @@ export default function RightPanel() {
                   value={currentStyles.backgroundColor || ''}
                   onChange={(val) => handleStyleChange('backgroundColor', val)}
                   placeholder="transparent"
+                  isOverridden={isStyleOverridden('backgroundColor')}
+                  onClearOverride={() => handleClearOverride('backgroundColor')}
                 />
 
                 <div className="space-y-1.5">

@@ -67,13 +67,25 @@ export default function Editor() {
     const isLibraryItem = active.data.current?.isLibraryItem;
     const isGlobal = active.data.current?.isGlobal;
     const globalId = active.data.current?.globalId;
+    const presetElement = active.data.current?.element;
     const overId = over.id as string;
     const overData = over.data.current;
 
-    if (isLibraryItem && type) {
+    if (isLibraryItem && (type || presetElement)) {
       let newElement: ElementInstance;
 
-      if (isGlobal && globalId) {
+      if (presetElement) {
+        // Create instance from preset
+        const createInstanceFromPreset = (el: any): ElementInstance => {
+          const instance: ElementInstance = {
+            ...el,
+            id: uuidv4(),
+            children: el.children ? el.children.map((child: any) => createInstanceFromPreset(child)) : undefined
+          };
+          return instance;
+        };
+        newElement = createInstanceFromPreset(presetElement);
+      } else if (isGlobal && globalId) {
         // Create an instance of a global component
         const { globalComponents } = useBuilderStore.getState();
         const master = globalComponents[globalId];
