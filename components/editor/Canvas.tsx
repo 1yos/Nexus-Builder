@@ -4,7 +4,7 @@ import React from 'react';
 import NextImage from 'next/image';
 import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } from 'motion/react';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
 import { HTMLRenderer } from './HTMLRenderer';
@@ -525,34 +525,6 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     opacity: isDragging ? 0.4 : undefined,
   } as React.CSSProperties;
 
-  const commonProps = {
-    ref: (node: any) => {
-      setNodeRef(node);
-      setDraggableRef(node);
-    },
-    style,
-    onClick: handleClick,
-    onDoubleClick: handleDoubleClick,
-    onMouseEnter: () => {
-      if (!isPreview) {
-        setHoveredElementId(element.id);
-      } else {
-        const hoverInteractions = element.interactions?.filter(i => i.trigger === 'hover') || [];
-        hoverInteractions.forEach(executeInteraction);
-      }
-    },
-    onMouseLeave: () => !isPreview && setHoveredElementId(null),
-    className: cn(
-      "relative group transition-all duration-300",
-      !isPreview && isSelected && "outline outline-2 outline-accent-primary outline-offset-[-2px] z-10 shadow-[0_0_20px_var(--accent-primary)]",
-      !isPreview && !isSelected && isHovered && !element.locked && "outline outline-1 outline-accent-primary/50 outline-offset-[-1px] z-10",
-      !isPreview && !isSelected && !isHovered && !element.locked && "hover:outline hover:outline-1 hover:outline-accent-primary/50 hover:outline-offset-[-1px]",
-      !isPreview && isOver && definition.isContainer && "bg-accent-primary/5 ring-2 ring-accent-primary ring-inset",
-      showOutlines && !isPreview && "outline outline-1 outline-accent-primary/20",
-      element.locked && "opacity-80 cursor-not-allowed"
-    )
-  };
-
   const actionButtons = !isPreview && isSelected && (
     <div className="absolute -top-10 right-0 flex items-center gap-1 bg-accent-primary p-1 rounded-lg shadow-xl shadow-accent-primary/40 z-[100]">
       <button 
@@ -655,10 +627,55 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
     );
   };
 
+  const { scrollYProgress } = useScroll();
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Pre-define transforms for scroll-progress and mouse-move
+  const scrollOpacity = useTransform(scrollYProgress, [0, 1], [0, 1]);
+  const scrollScale = useTransform(scrollYProgress, [0, 1], [0.8, 1.2]);
+  const mouseMoveX = useTransform(mouseX, [0, 1], [-20, 20]);
+  const mouseMoveY = useTransform(mouseY, [0, 1], [-20, 20]);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isPreview) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    mouseX.set(x);
+    mouseY.set(y);
+  };
+
   const getAnimationProps = () => {
     const animProps: any = {};
     let key: string | undefined;
     const isPlaying = (animId: string) => playingAnimationId === animId;
+
+    // Handle scroll-progress and mouse-move interactions
+    const scrollProgressInteractions = element.interactions?.filter(i => i.trigger === 'scroll-progress');
+    const mouseMoveInteractions = element.interactions?.filter(i => i.trigger === 'mouse-move');
+
+    if (isPreview && scrollProgressInteractions && scrollProgressInteractions.length > 0) {
+      scrollProgressInteractions.forEach(interaction => {
+        if (interaction.action === 'animate' && interaction.animationId) {
+          const anim = element.animations?.find(a => a.id === interaction.animationId);
+          if (anim) {
+            Object.assign(animProps, { style: { ...animProps.style, opacity: scrollOpacity, scale: scrollScale } });
+          }
+        }
+      });
+    }
+
+    if (isPreview && mouseMoveInteractions && mouseMoveInteractions.length > 0) {
+      mouseMoveInteractions.forEach(interaction => {
+        if (interaction.action === 'animate' && interaction.animationId) {
+          const anim = element.animations?.find(a => a.id === interaction.animationId);
+          if (anim) {
+            Object.assign(animProps, { style: { ...animProps.style, x: mouseMoveX, y: mouseMoveY } });
+          }
+        }
+      });
+    }
     
     if ((isPreview || playingAnimationId) && element.animations && element.animations.length > 0) {
       // Group animations by trigger
@@ -793,6 +810,40 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
 
   const content = (() => {
     const { animProps, key: animKey } = getAnimationProps();
+
+    const commonProps = {
+      ref: (node: any) => {
+        setNodeRef(node);
+        setDraggableRef(node);
+      },
+      style: {
+        ...style,
+        ...(animProps.style || {})
+      },
+      onClick: handleClick,
+      onDoubleClick: handleDoubleClick,
+      onMouseEnter: () => {
+        if (!isPreview) {
+          setHoveredElementId(element.id);
+        } else {
+          const hoverInteractions = element.interactions?.filter(i => i.trigger === 'hover') || [];
+          hoverInteractions.forEach(executeInteraction);
+        }
+      },
+      onMouseLeave: () => !isPreview && setHoveredElementId(null),
+      onMouseMove: handleMouseMove,
+      className: cn(
+        "relative group transition-all duration-300",
+        !isPreview && isSelected && "outline outline-2 outline-accent-primary outline-offset-[-2px] z-10 shadow-[0_0_20px_var(--accent-primary)]",
+        !isPreview && !isSelected && isHovered && !element.locked && "outline outline-1 outline-accent-primary/50 outline-offset-[-1px] z-10",
+        !isPreview && !isSelected && !isHovered && !element.locked && "hover:outline hover:outline-1 hover:outline-accent-primary/50 hover:outline-offset-[-1px]",
+        !isPreview && isOver && definition.isContainer && "bg-accent-primary/5 ring-2 ring-accent-primary ring-inset",
+        showOutlines && !isPreview && "outline outline-1 outline-accent-primary/20",
+        element.locked && "opacity-80 cursor-not-allowed"
+      ),
+      ...attributes,
+      ...listeners
+    };
     
     switch (element.type) {
       case 'section':
@@ -1212,6 +1263,107 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
               )}
             </AnimatePresence>
           </motion.nav>
+        );
+      case 'form':
+        return (
+          <motion.form 
+            key={animKey || element.id} 
+            {...commonProps} 
+            {...animProps}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (isPreview) {
+                alert(element.props.successMessage || 'Form submitted!');
+              }
+            }}
+          >
+            {badge}
+            {actionButtons}
+            {renderChildren()}
+          </motion.form>
+        );
+      case 'input':
+        return (
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            <input 
+              type={element.props.type || 'text'}
+              placeholder={element.props.placeholder}
+              required={element.props.required}
+              name={element.props.name}
+              className="w-full bg-transparent border-none outline-none text-inherit placeholder:text-zinc-400"
+              readOnly={!isPreview}
+            />
+          </motion.div>
+        );
+      case 'textarea':
+        return (
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            <textarea 
+              placeholder={element.props.placeholder}
+              required={element.props.required}
+              name={element.props.name}
+              rows={element.props.rows || 4}
+              className="w-full bg-transparent border-none outline-none text-inherit placeholder:text-zinc-400 resize-none"
+              readOnly={!isPreview}
+            />
+          </motion.div>
+        );
+      case 'select':
+        return (
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            <select 
+              name={element.props.name}
+              required={element.props.required}
+              className="w-full bg-transparent border-none outline-none text-inherit appearance-none"
+              disabled={!isPreview}
+            >
+              {element.props.options?.map((opt: any, idx: number) => (
+                <option key={idx} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </motion.div>
+        );
+      case 'checkbox':
+        return (
+          <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            <input 
+              type="checkbox"
+              name={element.props.name}
+              required={element.props.required}
+              defaultChecked={element.props.checked}
+              className="w-4 h-4 rounded border-zinc-300 text-accent-primary focus:ring-accent-primary"
+              disabled={!isPreview}
+            />
+            <span className="text-sm text-zinc-700">{element.props.label}</span>
+          </motion.div>
+        );
+      case 'label':
+        return (
+          <motion.label key={animKey || element.id} {...commonProps} {...animProps}>
+            {badge}
+            {actionButtons}
+            {isEditing ? (
+              <input
+                autoFocus
+                value={textValue}
+                onChange={handleTextChange}
+                onBlur={handleTextBlur}
+                onKeyDown={(e) => e.key === 'Enter' && handleTextBlur()}
+                className="bg-transparent border-none outline-none w-full text-inherit font-inherit"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              element.props.text
+            )}
+          </motion.label>
         );
       case 'hero':
         return (

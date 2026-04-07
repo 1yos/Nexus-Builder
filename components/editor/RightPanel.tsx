@@ -440,7 +440,282 @@ export default function RightPanel() {
               </div>
             </PropertySection>
 
-            {selectedElement.props.text !== undefined && (
+            {selectedElement.type === 'form' && (
+              <PropertySection title="Form Settings" icon={Settings2}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Action URL</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.action || ''}
+                      onChange={(e) => handlePropChange('action', e.target.value)}
+                      placeholder="https://formspree.io/f/..."
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Method</label>
+                    <select
+                      value={selectedElement.props.method || 'POST'}
+                      onChange={(e) => handlePropChange('method', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    >
+                      <option value="POST">POST</option>
+                      <option value="GET">GET</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Success Message</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.successMessage || ''}
+                      onChange={(e) => handlePropChange('successMessage', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Redirect URL</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.redirectUrl || ''}
+                      onChange={(e) => handlePropChange('redirectUrl', e.target.value)}
+                      placeholder="/thank-you"
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                </div>
+              </PropertySection>
+            )}
+
+            {selectedElement.type === 'input' && (
+              <PropertySection title="Input Settings" icon={Settings2}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Type</label>
+                    <select
+                      value={selectedElement.props.type || 'text'}
+                      onChange={(e) => handlePropChange('type', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    >
+                      <option value="text">Text</option>
+                      <option value="email">Email</option>
+                      <option value="password">Password</option>
+                      <option value="number">Number</option>
+                      <option value="tel">Phone</option>
+                      <option value="url">URL</option>
+                      <option value="date">Date</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Placeholder</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.placeholder || ''}
+                      onChange={(e) => handlePropChange('placeholder', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Field Name</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.name || ''}
+                      onChange={(e) => handlePropChange('name', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Required</label>
+                    <button
+                      onClick={() => handlePropChange('required', !selectedElement.props.required)}
+                      className={cn(
+                        "w-10 h-5 rounded-full transition-all relative",
+                        selectedElement.props.required ? "bg-accent-primary" : "bg-zinc-700"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
+                        selectedElement.props.required ? "left-6" : "left-1"
+                      )} />
+                    </button>
+                  </div>
+                </div>
+              </PropertySection>
+            )}
+
+            {selectedElement.type === 'textarea' && (
+              <PropertySection title="Textarea Settings" icon={Settings2}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Placeholder</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.placeholder || ''}
+                      onChange={(e) => handlePropChange('placeholder', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Field Name</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.name || ''}
+                      onChange={(e) => handlePropChange('name', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Rows</label>
+                    <input
+                      type="number"
+                      value={selectedElement.props.rows || 4}
+                      onChange={(e) => handlePropChange('rows', parseInt(e.target.value))}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Required</label>
+                    <button
+                      onClick={() => handlePropChange('required', !selectedElement.props.required)}
+                      className={cn(
+                        "w-10 h-5 rounded-full transition-all relative",
+                        selectedElement.props.required ? "bg-accent-primary" : "bg-zinc-700"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
+                        selectedElement.props.required ? "left-6" : "left-1"
+                      )} />
+                    </button>
+                  </div>
+                </div>
+              </PropertySection>
+            )}
+
+            {selectedElement.type === 'select' && (
+              <PropertySection title="Select Settings" icon={Settings2}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Field Name</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.name || ''}
+                      onChange={(e) => handlePropChange('name', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Options</label>
+                      <button
+                        onClick={() => {
+                          const newOption = { label: 'New Option', value: 'new-option' };
+                          handlePropChange('options', [...(selectedElement.props.options || []), newOption]);
+                        }}
+                        className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(selectedElement.props.options || []).map((opt: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg border border-zinc-700">
+                          <input
+                            type="text"
+                            value={opt.label}
+                            onChange={(e) => {
+                              const newOpts = [...selectedElement.props.options];
+                              newOpts[idx] = { ...opt, label: e.target.value };
+                              handlePropChange('options', newOpts);
+                            }}
+                            className="flex-1 bg-transparent text-[10px] text-zinc-200 focus:outline-none"
+                            placeholder="Label"
+                          />
+                          <input
+                            type="text"
+                            value={opt.value}
+                            onChange={(e) => {
+                              const newOpts = [...selectedElement.props.options];
+                              newOpts[idx] = { ...opt, value: e.target.value };
+                              handlePropChange('options', newOpts);
+                            }}
+                            className="flex-1 bg-transparent text-[10px] text-zinc-400 focus:outline-none"
+                            placeholder="Value"
+                          />
+                          <button
+                            onClick={() => {
+                              const newOpts = selectedElement.props.options.filter((_: any, i: number) => i !== idx);
+                              handlePropChange('options', newOpts);
+                            }}
+                            className="p-1 text-zinc-600 hover:text-red-400"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </PropertySection>
+            )}
+
+            {selectedElement.type === 'checkbox' && (
+              <PropertySection title="Checkbox Settings" icon={Settings2}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Label</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.label || ''}
+                      onChange={(e) => handlePropChange('label', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Field Name</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.name || ''}
+                      onChange={(e) => handlePropChange('name', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Checked by Default</label>
+                    <button
+                      onClick={() => handlePropChange('checked', !selectedElement.props.checked)}
+                      className={cn(
+                        "w-10 h-5 rounded-full transition-all relative",
+                        selectedElement.props.checked ? "bg-accent-primary" : "bg-zinc-700"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
+                        selectedElement.props.checked ? "left-6" : "left-1"
+                      )} />
+                    </button>
+                  </div>
+                </div>
+              </PropertySection>
+            )}
+
+            {selectedElement.type === 'label' && (
+              <PropertySection title="Label Settings" icon={Settings2}>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Text</label>
+                    <input
+                      type="text"
+                      value={selectedElement.props.text || ''}
+                      onChange={(e) => handlePropChange('text', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200"
+                    />
+                  </div>
+                </div>
+              </PropertySection>
+            )}
+
+            {selectedElement.props.text !== undefined && selectedElement.type !== 'label' && (
               <PropertySection title="Text Content" icon={TypeIcon}>
                 <textarea
                   value={selectedElement.props.text}
@@ -1301,6 +1576,8 @@ export default function RightPanel() {
                           <option value="hover">On Hover</option>
                           <option value="scroll">On Scroll</option>
                           <option value="load">On Load</option>
+                          <option value="scroll-progress">Scroll Progress</option>
+                          <option value="mouse-move">Mouse Move</option>
                         </select>
                       </div>
 

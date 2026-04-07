@@ -5,7 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 export type ComponentType = 
   | 'section' | 'container' | 'grid' | 'flex'
   | 'heading' | 'paragraph' | 'button' | 'image' | 'icon' | 'divider' | 'spacer'
-  | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features' | 'collection-list' | 'html';
+  | 'navbar' | 'hero' | 'card' | 'footer' | 'pricing' | 'features' | 'collection-list' | 'html'
+  | 'form' | 'input' | 'textarea' | 'select' | 'checkbox' | 'label';
 
 export interface Styles {
   typographyToken?: string;
@@ -49,10 +50,13 @@ export interface Animation {
 
 export interface Interaction {
   id: string;
-  trigger: 'click' | 'hover' | 'scroll' | 'load';
-  action: 'show' | 'hide' | 'scroll-to' | 'navigate' | 'open-modal';
+  trigger: 'click' | 'hover' | 'scroll' | 'load' | 'scroll-progress' | 'mouse-move';
+  action: 'show' | 'hide' | 'scroll-to' | 'navigate' | 'open-modal' | 'animate';
   targetId?: string;
   value?: string;
+  animationId?: string;
+  range?: { start: number; end: number };
+  axis?: 'x' | 'y' | 'both';
 }
 
 export interface CollectionField {
@@ -172,7 +176,7 @@ interface BuilderState {
   deviceMode: DeviceMode;
   editorMode: EditorMode;
   isPreview: boolean;
-  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages';
+  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets';
   rightPanelTab: 'style' | 'content' | 'layout' | 'animations' | 'interactions';
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
@@ -187,8 +191,27 @@ interface BuilderState {
   zoom: number;
   pan: { x: number; y: number };
   playingAnimationId: string | null;
+  siteSettings: {
+    name: string;
+    description: string;
+    favicon?: string;
+    googleAnalyticsId?: string;
+    customHead?: string;
+    customBody?: string;
+  };
+  assets: {
+    id: string;
+    name: string;
+    url: string;
+    type: 'image' | 'video' | 'file';
+    size: number;
+    createdAt: string;
+  }[];
   setPlayingAnimationId: (id: string | null) => void;
   setComponentOverride: (id: string, code: string) => void;
+  updateSiteSettings: (settings: Partial<BuilderState['siteSettings']>) => void;
+  addAsset: (asset: Omit<BuilderState['assets'][0], 'id' | 'createdAt'>) => void;
+  removeAsset: (id: string) => void;
   
   // Actions
   setElements: (elements: ElementInstance[]) => void;
@@ -202,7 +225,7 @@ interface BuilderState {
   moveElementTo: (id: string, parentId: string | null, index: number) => void;
   setDeviceMode: (mode: DeviceMode) => void;
   setEditorMode: (mode: EditorMode) => void;
-  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages') => void;
+  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets') => void;
   setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations' | 'interactions') => void;
   setLeftPanelCollapsed: (collapsed: boolean) => void;
   setRightPanelCollapsed: (collapsed: boolean) => void;
@@ -296,9 +319,26 @@ export const useBuilderStore = create<BuilderState>()(
       zoom: 1,
       pan: { x: 0, y: 0 },
       playingAnimationId: null,
+      siteSettings: {
+        name: 'My Website',
+        description: 'A website built with NEXUS',
+        favicon: '',
+        googleAnalyticsId: '',
+        customHead: '',
+        customBody: '',
+      },
+      assets: [],
+      addAsset: (asset) => set(state => ({ 
+        assets: [...state.assets, { ...asset, id: uuidv4(), createdAt: new Date().toISOString() }] 
+      })),
+      removeAsset: (id) => set(state => ({ assets: state.assets.filter(a => a.id !== id) })),
+      
       setPlayingAnimationId: (id) => set({ playingAnimationId: id }),
       setComponentOverride: (id, code) => set(state => ({
         componentOverrides: { ...state.componentOverrides, [id]: code }
+      })),
+      updateSiteSettings: (settings) => set(state => ({
+        siteSettings: { ...state.siteSettings, ...settings }
       })),
 
       addCollection: (collection) => set(state => ({ collections: [...state.collections, collection] })),
@@ -605,7 +645,7 @@ export const useBuilderStore = create<BuilderState>()(
 
       setEditorMode: (mode) => set({ editorMode: mode }),
 
-      setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages') => set({ leftPanelTab: tab }),
+      setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets') => set({ leftPanelTab: tab }),
       
       setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 

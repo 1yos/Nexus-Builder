@@ -464,5 +464,145 @@ export const COMPONENT_REGISTRY: Record<ComponentType, ComponentDefinition> = {
       width: '100%',
       minHeight: '50px'
     }
+  },
+  form: {
+    type: 'form',
+    label: 'Form',
+    icon: MessageSquare,
+    isContainer: true,
+    defaultProps: {
+      action: '',
+      method: 'POST',
+      successMessage: 'Thank you! Your submission has been received.',
+      errorMessage: 'Oops! Something went wrong while submitting the form.',
+      redirectUrl: ''
+    },
+    defaultStyles: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1rem',
+      padding: '2rem',
+      backgroundColor: '#ffffff',
+      borderRadius: '0.5rem',
+      width: '100%',
+      maxWidth: '500px'
+    },
+    defaultChildren: [
+      {
+        type: 'label',
+        props: { text: 'Name' },
+        styles: { fontSize: '0.875rem', fontWeight: '600', color: '#374151' }
+      },
+      {
+        type: 'input',
+        props: { placeholder: 'Enter your name', required: true, name: 'name' },
+        styles: { padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }
+      },
+      {
+        type: 'label',
+        props: { text: 'Email' },
+        styles: { fontSize: '0.875rem', fontWeight: '600', color: '#374151' }
+      },
+      {
+        type: 'input',
+        props: { placeholder: 'Enter your email', type: 'email', required: true, name: 'email' },
+        styles: { padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }
+      },
+      {
+        type: 'button',
+        props: { text: 'Submit' },
+        styles: { padding: '0.75rem', backgroundColor: '#3b82f6', color: '#ffffff', borderRadius: '0.375rem', fontWeight: '600' }
+      }
+    ]
+  },
+  input: {
+    type: 'input',
+    label: 'Input',
+    icon: Type,
+    defaultProps: {
+      type: 'text',
+      placeholder: 'Enter text...',
+      name: '',
+      required: false
+    },
+    defaultStyles: {
+      padding: '0.5rem',
+      border: '1px solid #d1d5db',
+      borderRadius: '0.375rem',
+      width: '100%',
+      backgroundColor: '#ffffff',
+      color: '#111827'
+    }
+  },
+  textarea: {
+    type: 'textarea',
+    label: 'Textarea',
+    icon: TextIcon,
+    defaultProps: {
+      placeholder: 'Enter message...',
+      name: '',
+      required: false,
+      rows: 4
+    },
+    defaultStyles: {
+      padding: '0.5rem',
+      border: '1px solid #d1d5db',
+      borderRadius: '0.375rem',
+      width: '100%',
+      backgroundColor: '#ffffff',
+      color: '#111827',
+      resize: 'vertical'
+    }
+  },
+  select: {
+    type: 'select',
+    label: 'Select',
+    icon: ListTodo,
+    defaultProps: {
+      name: '',
+      required: false,
+      options: [
+        { label: 'Option 1', value: 'option1' },
+        { label: 'Option 2', value: 'option2' }
+      ]
+    },
+    defaultStyles: {
+      padding: '0.5rem',
+      border: '1px solid #d1d5db',
+      borderRadius: '0.375rem',
+      width: '100%',
+      backgroundColor: '#ffffff',
+      color: '#111827'
+    }
+  },
+  checkbox: {
+    type: 'checkbox',
+    label: 'Checkbox',
+    icon: Square,
+    defaultProps: {
+      name: '',
+      required: false,
+      checked: false,
+      label: 'Check me'
+    },
+    defaultStyles: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem'
+    }
+  },
+  label: {
+    type: 'label',
+    label: 'Label',
+    icon: TextIcon,
+    defaultProps: {
+      text: 'Label Text'
+    },
+    defaultStyles: {
+      fontSize: '0.875rem',
+      fontWeight: '600',
+      color: '#374151',
+      display: 'block'
+    }
   }
 };

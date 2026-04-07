@@ -5,9 +5,10 @@ import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { useDraggable } from '@dnd-kit/core';
-import { Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, LucideIcon, Sparkles } from 'lucide-react';
+import { Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, LucideIcon, Sparkles, Settings, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
+import AssetManager from './AssetManager';
 import { PRESETS } from '@/lib/presets';
 
 export default function LeftPanel() {
@@ -43,10 +44,16 @@ export default function LeftPanel() {
             <CodeIcon className="w-5 h-5" />
           </button>
           <button
-            onClick={() => { setLeftPanelTab('tokens'); setLeftPanelCollapsed(false); }}
-            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'tokens' ? "text-amber-500 bg-amber-500/10" : "text-zinc-500 hover:text-zinc-300")}
+            onClick={() => { setLeftPanelTab('settings'); setLeftPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'settings' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
           >
-            <Palette className="w-5 h-5" />
+            <Settings className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setLeftPanelTab('assets'); setLeftPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'assets' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
+          >
+            <FolderOpen className="w-5 h-5" />
           </button>
         </div>
       </aside>
@@ -63,66 +70,86 @@ export default function LeftPanel() {
         <ChevronLeft className="w-4 h-4" />
       </button>
 
-      <div className="grid grid-cols-6 border-b border-zinc-800">
+      <div className="grid grid-cols-4 border-b border-zinc-800">
         <button
           onClick={() => setLeftPanelTab('components')}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'components' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Box className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Elements</span>
+          <Box className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Elements</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('library')}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'library' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Library</span>
+          <Sparkles className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Library</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('layers')}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'layers' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Layers className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Layers</span>
+          <Layers className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Layers</span>
+        </button>
+        <button
+          onClick={() => setLeftPanelTab('assets')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            leftPanelTab === 'assets' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <FolderOpen className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Assets</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('code')}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'code' ? "text-emerald-500 border-b-2 border-emerald-500 bg-emerald-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <CodeIcon className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Code</span>
+          <CodeIcon className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Code</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('tokens')}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'tokens' ? "text-amber-500 border-b-2 border-amber-500 bg-amber-500/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Palette className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Theme</span>
+          <Palette className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Theme</span>
         </button>
         <button
           onClick={() => setLeftPanelTab('pages')}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
             leftPanelTab === 'pages' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Globe className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate w-full text-center px-1">Pages</span>
+          <Globe className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Pages</span>
+        </button>
+        <button
+          onClick={() => setLeftPanelTab('settings')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 py-2 text-[8px] font-bold uppercase tracking-tighter transition-colors overflow-hidden",
+            leftPanelTab === 'settings' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+          )}
+        >
+          <Settings className="w-3 h-3 shrink-0" />
+          <span className="truncate w-full text-center px-0.5">Site</span>
         </button>
       </div>
 
@@ -130,9 +157,11 @@ export default function LeftPanel() {
         {leftPanelTab === 'components' && <ComponentsTab />}
         {leftPanelTab === 'library' && <LibraryTab />}
         {leftPanelTab === 'layers' && <LayersTab />}
+        {leftPanelTab === 'assets' && <AssetManager />}
         {leftPanelTab === 'code' && <CodePanel />}
         {leftPanelTab === 'tokens' && <ThemeTab />}
         {leftPanelTab === 'pages' && <PagesTab />}
+        {leftPanelTab === 'settings' && <SettingsTab />}
       </div>
     </aside>
   );
@@ -915,6 +944,96 @@ function PagesTab() {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { siteSettings, updateSiteSettings } = useBuilderStore();
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-zinc-800">
+        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Site Settings</h3>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Site Name</label>
+            <input
+              type="text"
+              value={siteSettings.name}
+              onChange={(e) => updateSiteSettings({ name: e.target.value })}
+              placeholder="My Awesome Site"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Site Description</label>
+            <textarea
+              value={siteSettings.description}
+              onChange={(e) => updateSiteSettings({ description: e.target.value })}
+              placeholder="A brief description of your site..."
+              rows={3}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Favicon URL</label>
+            <input
+              type="text"
+              value={siteSettings.favicon || ''}
+              onChange={(e) => updateSiteSettings({ favicon: e.target.value })}
+              placeholder="https://example.com/favicon.ico"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Google Analytics ID</label>
+            <input
+              type="text"
+              value={siteSettings.googleAnalyticsId || ''}
+              onChange={(e) => updateSiteSettings({ googleAnalyticsId: e.target.value })}
+              placeholder="G-XXXXXXXXXX"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            />
+          </div>
+
+          <div className="pt-4 border-t border-zinc-800 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Custom Head Code</label>
+                <span className="text-[9px] text-zinc-600 italic">Advanced</span>
+              </div>
+              <textarea
+                value={siteSettings.customHead || ''}
+                onChange={(e) => updateSiteSettings({ customHead: e.target.value })}
+                placeholder="<script>...</script>"
+                rows={4}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-md p-2 text-[10px] font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Custom Body Code</label>
+                <span className="text-[9px] text-zinc-600 italic">Advanced</span>
+              </div>
+              <textarea
+                value={siteSettings.customBody || ''}
+                onChange={(e) => updateSiteSettings({ customBody: e.target.value })}
+                placeholder="<script>...</script>"
+                rows={4}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-md p-2 text-[10px] font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -79,6 +79,16 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
       return getSlug(pageId) + '.html';
     };
     
+    const scrollProgressInteractions = el.interactions?.filter((i: any) => i.trigger === 'scroll-progress');
+    const mouseMoveInteractions = el.interactions?.filter((i: any) => i.trigger === 'mouse-move');
+    
+    if (scrollProgressInteractions && scrollProgressInteractions.length > 0) {
+      props.push('data-interaction-scroll-progress="true"');
+    }
+    if (mouseMoveInteractions && mouseMoveInteractions.length > 0) {
+      props.push('data-interaction-mouse-move="true"');
+    }
+
     switch (el.type) {
       case 'heading':
         tag = `h${el.props.level || 1}`;
@@ -116,6 +126,24 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
       case 'html':
         tag = 'iframe';
         break;
+      case 'form':
+        tag = 'form';
+        break;
+      case 'input':
+        tag = 'input';
+        break;
+      case 'textarea':
+        tag = 'textarea';
+        break;
+      case 'select':
+        tag = 'select';
+        break;
+      case 'checkbox':
+        tag = 'input';
+        break;
+      case 'label':
+        tag = 'label';
+        break;
     }
     
     let children = el.children ? generateHTML(el.children, pages, folders, isStaticExport) : (el.props.text || '');
@@ -131,6 +159,39 @@ export function generateHTML(elements: ElementInstance[], pages: Page[], folders
       props.push(`sandbox="allow-scripts allow-same-origin allow-popups"`);
       finalStyles = `border: none; width: 100%; height: 100%; ${finalStyles}`;
       children = '';
+    } else if (el.type === 'form') {
+      props.push(`action="${el.props.action || '#'}"`);
+      props.push(`method="${el.props.method || 'POST'}"`);
+      if (el.props.redirectUrl) props.push(`data-redirect="${el.props.redirectUrl}"`);
+    } else if (el.type === 'input') {
+      props.push(`type="${el.props.type || 'text'}"`);
+      props.push(`placeholder="${el.props.placeholder || ''}"`);
+      props.push(`name="${el.props.name || ''}"`);
+      if (el.props.required) props.push('required');
+      children = '';
+    } else if (el.type === 'textarea') {
+      props.push(`placeholder="${el.props.placeholder || ''}"`);
+      props.push(`name="${el.props.name || ''}"`);
+      props.push(`rows="${el.props.rows || 4}"`);
+      if (el.props.required) props.push('required');
+      children = '';
+    } else if (el.type === 'select') {
+      props.push(`name="${el.props.name || ''}"`);
+      if (el.props.required) props.push('required');
+      children = (el.props.options || []).map((opt: any) => 
+        `<option value="${opt.value}">${opt.label}</option>`
+      ).join('');
+    } else if (el.type === 'checkbox') {
+      props.push('type="checkbox"');
+      props.push(`name="${el.props.name || ''}"`);
+      if (el.props.required) props.push('required');
+      if (el.props.checked) props.push('checked');
+      children = '';
+      // Wrap in a div for label if needed
+      return `<div style="display: flex; align-items: center; gap: 8px;">
+        <input ${props.join(' ')} style="${finalStyles}">
+        <span style="font-size: 14px; color: #374151;">${el.props.label || ''}</span>
+      </div>`;
     } else if (el.type === 'navbar') {
       const logo = el.props.logoType === 'image' 
         ? `<img src="${el.props.logoSrc}" alt="Logo" style="height: 32px;" />`
@@ -324,6 +385,7 @@ export function generateReact(
 ): string {
   const renderElement = (el: any, indent = 2, contextVar?: string): string => {
     const spaces = ' '.repeat(indent);
+    let children: string = '';
     
     // Check for code overrides
     const override = codeOverrides[el.id];
@@ -415,6 +477,10 @@ export function generateReact(
       return iProps;
     };
 
+    const scrollProgressInteractions = el.interactions?.filter((i: any) => i.trigger === 'scroll-progress');
+    const mouseMoveInteractions = el.interactions?.filter((i: any) => i.trigger === 'mouse-move');
+    const hasMotionStyles = (scrollProgressInteractions && scrollProgressInteractions.length > 0) || (mouseMoveInteractions && mouseMoveInteractions.length > 0);
+
     if (el.isGlobal && el.globalId && globalComponents[el.globalId] && !el.isMaster) {
       const compName = getComponentName(globalComponents[el.globalId].name || `Global ${el.type}`);
       if (extractedComponents.includes(compName) && componentName !== compName) {
@@ -475,6 +541,18 @@ export function generateReact(
       case 'navbar':
         tag = `motion.${el.type === 'navbar' ? 'nav' : el.type === 'hero' ? 'section' : el.type}`;
         break;
+      case 'form':
+        tag = 'motion.form';
+        props.push(`action="${el.props.action || '#'}"`);
+        props.push(`method="${el.props.method || 'POST'}"`);
+        props.push(`onSubmit={(e) => {
+          if ("${el.props.action || ''}" === "") {
+            e.preventDefault();
+            alert("${el.props.successMessage || 'Form submitted!'}");
+            ${el.props.redirectUrl ? `window.location.href = "${el.props.redirectUrl}";` : ''}
+          }
+        }}`);
+        break;
       case 'container':
       case 'grid':
       case 'flex':
@@ -485,6 +563,35 @@ export function generateReact(
       case 'divider':
       case 'spacer':
         tag = 'motion.div';
+        break;
+      case 'input':
+        tag = 'motion.input';
+        props.push(`type="${el.props.type || 'text'}"`);
+        props.push(`placeholder="${el.props.placeholder || ''}"`);
+        props.push(`name="${el.props.name || ''}"`);
+        if (el.props.required) props.push('required');
+        break;
+      case 'textarea':
+        tag = 'motion.textarea';
+        props.push(`placeholder="${el.props.placeholder || ''}"`);
+        props.push(`name="${el.props.name || ''}"`);
+        props.push(`rows={${el.props.rows || 4}}`);
+        if (el.props.required) props.push('required');
+        break;
+      case 'select':
+        tag = 'motion.select';
+        props.push(`name="${el.props.name || ''}"`);
+        if (el.props.required) props.push('required');
+        break;
+      case 'checkbox':
+        tag = 'motion.input';
+        props.push('type="checkbox"');
+        props.push(`name="${el.props.name || ''}"`);
+        if (el.props.required) props.push('required');
+        if (el.props.checked) props.push('defaultChecked={true}');
+        break;
+      case 'label':
+        tag = 'motion.label';
         break;
       case 'html':
         tag = 'HTMLRenderer';
@@ -500,11 +607,17 @@ export function generateReact(
     }
 
     const otherProps = Object.entries(el.props || {})
-      .filter(([k]) => !['text', 'level', 'href', 'src', 'alt', 'links', 'logoText', 'logoSrc', 'logoType', 'copyright', 'icon', 'htmlContent'].includes(k))
+      .filter(([k]) => !['text', 'level', 'href', 'src', 'alt', 'links', 'logoText', 'logoSrc', 'logoType', 'copyright', 'icon', 'htmlContent', 'options'].includes(k))
       .map(([k, v]) => `${k}={${JSON.stringify(v)}}`)
       .join(' ');
     
     if (otherProps) props.push(otherProps);
+
+    if (el.type === 'select' && el.props.options) {
+      children = el.props.options.map((opt: any) => 
+        `<option key="${opt.value}" value="${opt.value}">${opt.label}</option>`
+      ).join('\n');
+    }
     
     const propsString = props.length > 0 ? ' ' + props.join(' ') : '';
     
@@ -555,9 +668,31 @@ export function generateReact(
       }
     }
     
-    let children = el.children?.length 
-      ? `\n${el.children.map((c: any) => renderElement(c, indent + 2, contextVar)).join('\n')}\n${spaces}`
-      : (el.boundField && contextVar ? `{${contextVar}.data?.${el.boundField.split('.')[1]} || ${JSON.stringify(el.props.text || '')}}` : (el.props.text || ''));
+    if (hasMotionStyles) {
+      const motionStyles = [];
+      if (scrollProgressInteractions && scrollProgressInteractions.length > 0) {
+        motionStyles.push('opacity: scrollOpacity', 'scale: scrollScale');
+      }
+      if (mouseMoveInteractions && mouseMoveInteractions.length > 0) {
+        motionStyles.push('x: mouseMoveX', 'y: mouseMoveY');
+        props.push('onMouseMove={handleMouseMove}');
+      }
+      
+      if (styleProp.includes('style={{')) {
+        styleProp = styleProp.replace('style={{', `style={{ ${motionStyles.join(', ')}, `);
+      } else if (styleProp.includes('style={')) {
+        styleProp = styleProp.replace('style={', `style={{ ${motionStyles.join(', ')}, ...`);
+        styleProp = styleProp.replace('}', ' }}');
+      } else {
+        styleProp += ` style={{ ${motionStyles.join(', ')} }}`;
+      }
+    }
+    
+    if (!children) {
+      children = el.children?.length 
+        ? `\n${el.children.map((c: any) => renderElement(c, indent + 2, contextVar)).join('\n')}\n${spaces}`
+        : (el.boundField && contextVar ? `{${contextVar}.data?.${el.boundField.split('.')[1]} || ${JSON.stringify(el.props.text || '')}}` : (el.props.text || ''));
+    }
 
     if (el.type === 'html') {
       children = '';
@@ -691,7 +826,32 @@ export function generateReact(
   };
 
   const linkImport = framework === 'nextjs' ? `import Link from 'next/link';` : `import { Link } from 'react-router-dom';`;
-  const motionImport = `import { motion, AnimatePresence } from 'framer-motion';`;
+  const motionImport = `import { motion, AnimatePresence, useScroll, useTransform, useMotionValue } from 'motion/react';`;
+
+  const hasScrollProgress = elements.some(el => {
+    const check = (e: any): boolean => (e.interactions && e.interactions.some((i: any) => i.trigger === 'scroll-progress')) || (e.children && e.children.some(check));
+    return check(el);
+  });
+
+  const hasMouseMove = elements.some(el => {
+    const check = (e: any): boolean => (e.interactions && e.interactions.some((i: any) => i.trigger === 'mouse-move')) || (e.children && e.children.some(check));
+    return check(el);
+  });
+
+  const motionHooks = `
+  ${hasScrollProgress ? 'const { scrollYProgress } = useScroll();' : ''}
+  ${hasMouseMove ? 'const mouseX = useMotionValue(0); const mouseY = useMotionValue(0);' : ''}
+  ${hasScrollProgress ? 'const scrollOpacity = useTransform(scrollYProgress, [0, 1], [0, 1]); const scrollScale = useTransform(scrollYProgress, [0, 1], [0.8, 1.2]);' : ''}
+  ${hasMouseMove ? 'const mouseMoveX = useTransform(mouseX, [0, 1], [-20, 20]); const mouseMoveY = useTransform(mouseY, [0, 1], [-20, 20]);' : ''}
+  
+  ${hasMouseMove ? `const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    mouseX.set(x);
+    mouseY.set(y);
+  };` : ''}
+  `;
 
   const rootProps = framework === 'nextjs' 
     ? `className="min-h-screen bg-white text-zinc-900"`
@@ -764,6 +924,7 @@ ${cmsImport}${htmlRendererImport}${componentImports}
 
 export default function ${componentName}() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  ${motionHooks}
   
   return (
     <React.Fragment>
@@ -785,6 +946,7 @@ ${cmsImport}${htmlRendererImport}${componentImports}
 
 export default function ${componentName}(${pageProps}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  ${motionHooks}
 
   return (
     <div ${rootProps}>
@@ -797,7 +959,7 @@ ${elements.map(el => renderElement(el, 6, contextVar)).join('\n')}
 /**
  * Generates a full HTML document string for a page.
  */
-export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], tokens: DesignToken[]): string {
+export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], tokens: DesignToken[], siteSettings?: any): string {
   const content = generateHTML(page.elements, pages, folders, true);
   
   const tokenStyles = tokens.map(t => {
@@ -809,15 +971,31 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], t
     return `--token-${t.id}: ${t.value};`;
   }).join('\n        ');
 
+  const title = page.seo?.title || (siteSettings?.name ? `${page.name} | ${siteSettings.name}` : page.name);
+  const description = page.seo?.description || siteSettings?.description || '';
+  const favicon = siteSettings?.favicon ? `<link rel="icon" href="${siteSettings.favicon}">` : '';
+  const gaScript = siteSettings?.googleAnalyticsId ? `
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${siteSettings.googleAnalyticsId}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${siteSettings.googleAnalyticsId}');
+    </script>` : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${page.seo?.title || page.name}</title>
-    ${page.seo?.description ? `<meta name="description" content="${page.seo.description}">` : ''}
+    <title>${title}</title>
+    ${description ? `<meta name="description" content="${description}">` : ''}
     ${page.seo?.ogImage ? `<meta property="og:image" content="${page.seo.ogImage}">` : ''}
     ${page.seo?.noIndex ? `<meta name="robots" content="noindex">` : ''}
+    ${favicon}
+    ${gaScript}
+    ${siteSettings?.customHead || ''}
     <style>
         :root {
             ${tokenStyles}
@@ -830,6 +1008,7 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], t
     </style>
 </head>
 <body>
+    ${siteSettings?.customBody || ''}
     <div class="min-h-screen">
         ${content}
     </div>
@@ -848,6 +1027,27 @@ export function generateFullHTML(page: Page, pages: Page[], folders: Folder[], t
               menu.classList.toggle('hidden');
             }
           });
+        });
+      });
+      // Interaction logic
+      document.addEventListener('scroll', () => {
+        const scrollPercent = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+        const elements = document.querySelectorAll('[data-interaction-scroll-progress]');
+        elements.forEach(el => {
+          el.style.opacity = scrollPercent;
+          el.style.transform = 'scale(' + (0.8 + (scrollPercent * 0.4)) + ')';
+        });
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        const elements = document.querySelectorAll('[data-interaction-mouse-move]');
+        elements.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width;
+          const y = (e.clientY - rect.top) / rect.height;
+          const moveX = (x - 0.5) * 40;
+          const moveY = (y - 0.5) * 40;
+          el.style.transform = 'translate(' + moveX + 'px, ' + moveY + 'px)';
         });
       });
     </script>
@@ -877,7 +1077,8 @@ export function generateSiteCode(
   format: 'html' | 'react' | 'nextjs' = 'html', 
   collections: any[] = [], 
   entries: any[] = [],
-  codeOverrides: Record<string, string> = {}
+  codeOverrides: Record<string, string> = {},
+  siteSettings?: any
 ): Record<string, string> {
   const site: Record<string, string> = {};
   
@@ -890,7 +1091,7 @@ export function generateSiteCode(
     pages.forEach(page => {
       const baseName = getSlug(page.name);
       const filename = isHomePage(page, pages) ? 'index.html' : `${baseName}.html`;
-      site[filename] = generateFullHTML(page, pages, folders, tokens);
+      site[filename] = generateFullHTML(page, pages, folders, tokens, siteSettings);
     });
   } else if (format === 'react') {
     site['package.json'] = JSON.stringify({
@@ -908,7 +1109,7 @@ export function generateSiteCode(
         "react-dom": "^18.2.0",
         "react-router-dom": "^6.14.2",
         "lucide-react": "^0.284.0",
-        "framer-motion": "^11.0.8"
+        "motion": "^12.0.0"
       },
       devDependencies: {
         "@types/react": "^18.2.15",
@@ -1172,7 +1373,7 @@ export default App;`;
         "react-dom": "^18.2.0",
         "next": "14.2.3",
         "lucide-react": "^0.284.0",
-        "framer-motion": "^11.0.8",
+        "motion": "^12.0.0",
         "clsx": "^2.1.0",
         "tailwind-merge": "^2.2.1"
       },
@@ -1332,8 +1533,9 @@ img { max-width: 100%; height: auto; }`;
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NEXUS Exported Site",
-  description: "Generated by Nexus Builder",
+  title: "${siteSettings?.name || 'NEXUS Exported Site'}",
+  description: "${siteSettings?.description || 'Generated by Nexus Builder'}",
+  ${siteSettings?.favicon ? `icons: { icon: "${siteSettings.favicon}" },` : ''}
 };
 
 export default function RootLayout({
@@ -1343,7 +1545,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        ${siteSettings?.googleAnalyticsId ? `
+        <script async src="https://www.googletagmanager.com/gtag/js?id=${siteSettings.googleAnalyticsId}"></script>
+        <script dangerouslySetInnerHTML={{
+          __html: \`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${siteSettings.googleAnalyticsId}');
+          \`
+        }} />` : ''}
+        ${siteSettings?.customHead ? `<script dangerouslySetInnerHTML={{ __html: \`${siteSettings.customHead.replace(/`/g, '\\`').replace(/\${/g, '\\${')}\` }} />` : ''}
+      </head>
+      <body>
+        ${siteSettings?.customBody ? `<div dangerouslySetInnerHTML={{ __html: \`${siteSettings.customBody.replace(/`/g, '\\`').replace(/\${/g, '\\${')}\` }} />` : ''}
+        {children}
+      </body>
     </html>
   );
 }`;
