@@ -48,6 +48,17 @@ const LUCIDE_ICONS: Record<string, any> = {
   Activity, Shield, Smartphone, Star, CheckCircle, Clock, Heart, Globe, Layout, Type, ImageIcon, MousePointer2, Navigation, LayoutTemplate, CreditCard, ListTodo, Square, Columns, Rows, TextIcon
 };
 
+const findElement = (items: ElementInstance[], id: string): ElementInstance | null => {
+  for (const item of items) {
+    if (item.id === id) return item;
+    if (item.children) {
+      const found = findElement(item.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 export default function Canvas() {
   const { 
     elements, 
@@ -74,8 +85,30 @@ export default function Canvas() {
     collections,
     entries,
     setActivePage,
-    activePageId
+    activePageId,
+    showGrid,
+    copyElement,
+    pasteElement,
+    duplicateElement,
+    removeElement,
+    moveElement,
+    clipboard
   } = useBuilderStore();
+
+  const [contextMenu, setContextMenu] = React.useState<{ x: number, y: number, elementId: string } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, elementId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, elementId });
+    selectElement(elementId);
+  };
+
+  React.useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
 
   const activePage = pages.find(p => p.id === activePageId);
   const isDynamicPage = activePage?.isDynamic;
@@ -225,33 +258,6 @@ export default function Canvas() {
         </div>
       )}
 
-      {!isPreview && (
-        <div className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 p-1 rounded-lg shadow-xl">
-          <button 
-            onClick={() => setZoom(Math.max(zoom - 0.1, 0.25))}
-            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
-          >
-            -
-          </button>
-          <span className="text-[10px] font-bold text-zinc-300 min-w-[40px] text-center uppercase tracking-widest">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button 
-            onClick={() => setZoom(Math.min(zoom + 0.1, 2))}
-            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
-          >
-            +
-          </button>
-          <div className="w-px h-4 bg-zinc-800 mx-1" />
-          <button 
-            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-            className="px-2 py-1 text-[9px] font-bold text-zinc-500 hover:text-zinc-300 uppercase tracking-tighter"
-          >
-            Reset
-          </button>
-        </div>
-      )}
-
       <div 
         className="flex-1 w-full h-full overflow-auto flex flex-col items-center p-20 custom-scrollbar"
         style={{ 
@@ -282,13 +288,16 @@ export default function Canvas() {
             <>
               {/* 8px Grid Pattern */}
               <div 
-                className="absolute inset-0 pointer-events-none opacity-[0.03]"
+                className={cn(
+                  "absolute inset-0 pointer-events-none transition-opacity duration-300",
+                  showGrid ? "opacity-[0.08]" : "opacity-0"
+                )}
                 style={{ 
                   backgroundImage: `
                     linear-gradient(to right, #000 1px, transparent 1px),
                     linear-gradient(to bottom, #000 1px, transparent 1px)
                   `,
-                  backgroundSize: '8px 8px'
+                  backgroundSize: '20px 20px'
                 }}
               />
               
@@ -328,7 +337,11 @@ export default function Canvas() {
                 <DropIndicator key="drop-indicator-root-0" index={0} />
                 {elementsToRender.map((element, idx) => (
                   <React.Fragment key={element.id}>
-                    <RenderElement element={element} index={idx} />
+                    <RenderElement 
+                      element={element} 
+                      index={idx} 
+                      onContextMenu={(e) => handleContextMenu(e, element.id)}
+                    />
                     <DropIndicator index={idx + 1} />
                   </React.Fragment>
                 ))}
@@ -337,7 +350,77 @@ export default function Canvas() {
           </AnimatePresence>
         </motion.div>
       </div>
+      {contextMenu && (
+        <div 
+          className="fixed z-[100] bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl py-1 min-w-[160px] backdrop-blur-md"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ContextMenuItem 
+            icon={Copy} 
+            label="Copy" 
+            onClick={() => { copyElement(contextMenu.elementId); setContextMenu(null); }} 
+          />
+          <ContextMenuItem 
+            icon={Copy} 
+            label="Paste" 
+            disabled={!clipboard}
+            onClick={() => { pasteElement(); setContextMenu(null); }} 
+          />
+          <ContextMenuItem 
+            icon={Copy} 
+            label="Duplicate" 
+            onClick={() => { duplicateElement(contextMenu.elementId); setContextMenu(null); }} 
+          />
+          <ContextMenuItem 
+            icon={ArrowUpToLine} 
+            label="Move to Top" 
+            onClick={() => { moveElement(contextMenu.elementId, 'top'); setContextMenu(null); }} 
+          />
+          <ContextMenuItem 
+            icon={ArrowDownToLine} 
+            label="Move to Bottom" 
+            onClick={() => { moveElement(contextMenu.elementId, 'bottom'); setContextMenu(null); }} 
+          />
+          <div className="h-px bg-zinc-800 my-1 mx-1" />
+          <ContextMenuItem 
+            icon={Lock} 
+            label="Lock / Unlock" 
+            onClick={() => { 
+              const el = findElement(elements, contextMenu.elementId);
+              if (el) updateElement(contextMenu.elementId, { locked: !el.locked });
+              setContextMenu(null); 
+            }} 
+          />
+          <ContextMenuItem 
+            icon={Trash2} 
+            label="Delete" 
+            danger
+            onClick={() => { removeElement(contextMenu.elementId); setContextMenu(null); }} 
+          />
+        </div>
+      )}
     </main>
+  );
+}
+
+function ContextMenuItem({ icon: Icon, label, onClick, danger, disabled }: { icon: any, label: string, onClick: () => void, danger?: boolean, disabled?: boolean }) {
+  return (
+    <button 
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!disabled) onClick();
+      }}
+      className={cn(
+        "w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium transition-colors",
+        danger ? "text-red-400 hover:bg-red-500/10" : "text-zinc-300 hover:bg-zinc-800 hover:text-white",
+        disabled && "opacity-30 cursor-not-allowed grayscale"
+      )}
+    >
+      <Icon className="w-3.5 h-3.5" />
+      {label}
+    </button>
   );
 }
 
@@ -370,7 +453,17 @@ function DropIndicator({ parentId, index }: { parentId?: string; index: number }
   );
 }
 
-function RenderElement({ element, index, parentId }: { element: ElementInstance; index: number; parentId?: string }) {
+function RenderElement({ 
+  element, 
+  index, 
+  parentId, 
+  onContextMenu 
+}: { 
+  element: ElementInstance; 
+  index: number; 
+  parentId?: string;
+  onContextMenu?: (e: React.MouseEvent) => void;
+}) {
   const { 
     selectElement, 
     selectedElementId, 
@@ -449,17 +542,6 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       const target = document.getElementById(interaction.targetId);
       if (target) target.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const findElement = (items: ElementInstance[], id: string): ElementInstance | null => {
-    for (const item of items) {
-      if (item.id === id) return item;
-      if (item.children) {
-        const found = findElement(item.children, id);
-        if (found) return found;
-      }
-    }
-    return null;
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -831,6 +913,10 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
         }
       },
       onMouseLeave: () => !isPreview && setHoveredElementId(null),
+      onContextMenu: (e: React.MouseEvent) => {
+        if (isPreview) return;
+        if (onContextMenu) onContextMenu(e);
+      },
       onMouseMove: handleMouseMove,
       className: cn(
         "relative group transition-all duration-300",
@@ -844,6 +930,52 @@ function RenderElement({ element, index, parentId }: { element: ElementInstance;
       ...attributes,
       ...listeners
     };
+
+    // Handle component overrides (Developer Mode)
+    const overrideCode = useBuilderStore.getState().componentOverrides[element.id];
+    if (overrideCode && isPreview) {
+      const template = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+            <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+          <body style="margin: 0; padding: 0; overflow: hidden;">
+            <div id="root"></div>
+            <script>
+              const { useState, useEffect } = React;
+              try {
+                const code = \`${overrideCode.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+                const transpiled = Babel.transform(code, { presets: ['env', 'react'] }).code;
+                const exports = {};
+                const require = (module) => {
+                  if (module === 'react') return React;
+                  if (module === 'react-dom') return ReactDOM;
+                  return {};
+                };
+                new Function('exports', 'require', 'React', transpiled)(exports, require, React);
+                const Component = exports.default || exports;
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(React.createElement(Component));
+              } catch (err) {
+                document.getElementById('root').innerHTML = '<pre style="color:red; padding: 1rem; font-size: 12px;">' + err.message + '</pre>';
+              }
+            </script>
+          </body>
+        </html>
+      `;
+      return (
+        <motion.div key={animKey || element.id} {...commonProps} {...animProps}>
+          <HTMLRenderer 
+            html={template}
+            className="w-full h-full"
+          />
+        </motion.div>
+      );
+    }
     
     switch (element.type) {
       case 'section':

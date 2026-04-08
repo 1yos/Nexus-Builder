@@ -4,11 +4,14 @@ import React from 'react';
 import { useBuilderStore, ElementInstance } from '@/store/useBuilderStore';
 import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
-import { useDraggable } from '@dnd-kit/core';
-import { Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, LucideIcon, Sparkles, Settings, FolderOpen } from 'lucide-react';
+import { useDraggable, DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Layers, Box, Search, ChevronRight, ChevronDown, Eye, EyeOff, Trash2, Copy, Lock, Unlock, Image as ImageIcon, Code as CodeIcon, ChevronUp, ArrowUpToLine, ArrowDownToLine, ChevronLeft, Palette, Plus, Group, Maximize2, Globe, LucideIcon, Settings, FolderOpen, GripVertical, LayoutTemplate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodePanel from './CodePanel';
 import AssetManager from './AssetManager';
+import ThemePanel from './ThemePanel';
 import { PRESETS } from '@/lib/presets';
 
 export default function LeftPanel() {
@@ -52,8 +55,16 @@ export default function LeftPanel() {
           <button
             onClick={() => { setLeftPanelTab('assets'); setLeftPanelCollapsed(false); }}
             className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'assets' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
+            title="Assets"
           >
             <FolderOpen className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setLeftPanelTab('theme'); setLeftPanelCollapsed(false); }}
+            className={cn("p-2 rounded-md transition-colors", leftPanelTab === 'theme' ? "text-accent-primary bg-accent-primary/10" : "text-zinc-500 hover:text-zinc-300")}
+            title="Theme & Tokens"
+          >
+            <Palette className="w-5 h-5" />
           </button>
         </div>
       </aside>
@@ -88,7 +99,7 @@ export default function LeftPanel() {
             leftPanelTab === 'library' ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
           )}
         >
-          <Sparkles className="w-3 h-3 shrink-0" />
+          <Plus className="w-3 h-3 shrink-0" />
           <span className="truncate w-full text-center px-0.5">Library</span>
         </button>
         <button
@@ -159,7 +170,7 @@ export default function LeftPanel() {
         {leftPanelTab === 'layers' && <LayersTab />}
         {leftPanelTab === 'assets' && <AssetManager />}
         {leftPanelTab === 'code' && <CodePanel />}
-        {leftPanelTab === 'tokens' && <ThemeTab />}
+        {leftPanelTab === 'theme' && <ThemePanel />}
         {leftPanelTab === 'pages' && <PagesTab />}
         {leftPanelTab === 'settings' && <SettingsTab />}
       </div>
@@ -510,8 +521,28 @@ function ThemeTab() {
 }
 
 function LayersTab() {
-  const { elements, groupElements } = useBuilderStore();
+  const { elements, groupElements, setElements } = useBuilderStore();
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = elements.findIndex((el) => el.id === active.id);
+      const newIndex = elements.findIndex((el) => el.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setElements(arrayMove(elements, oldIndex, newIndex));
+      }
+    }
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => 
@@ -543,17 +574,28 @@ function LayersTab() {
             <p className="text-xs">No elements on this page yet.</p>
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {elements.map((element) => (
-              <LayerItem 
-                key={element.id} 
-                element={element} 
-                depth={0} 
-                selectedIds={selectedIds}
-                toggleSelect={toggleSelect}
-              />
-            ))}
-          </div>
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext 
+              items={elements.map(el => el.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-0.5">
+                {elements.map((element) => (
+                  <LayerItem 
+                    key={element.id} 
+                    element={element} 
+                    depth={0} 
+                    selectedIds={selectedIds}
+                    toggleSelect={toggleSelect}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </div>
@@ -587,6 +629,20 @@ function LayerItem({
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempName, setTempName] = React.useState(element.name || COMPONENT_REGISTRY[element.type].label);
   
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: element.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   const isSelected = selectedElementId === element.id;
   const isHovered = hoveredElementId === element.id;
   const component = COMPONENT_REGISTRY[element.type];
@@ -599,7 +655,11 @@ function LayerItem({
   };
 
   return (
-    <div className="flex flex-col">
+    <div 
+      ref={setNodeRef} 
+      style={style}
+      className={cn("flex flex-col", isDragging && "z-50 opacity-50")}
+    >
       <div
         onClick={() => !element.locked && selectElement(element.id)}
         onMouseEnter={() => setHoveredElementId(element.id)}
@@ -608,10 +668,18 @@ function LayerItem({
         className={cn(
           "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all relative",
           isSelected ? "bg-accent-primary/20 text-accent-primary" : isHovered ? "bg-zinc-800/50 text-zinc-200" : "hover:bg-zinc-800/30 text-zinc-400 hover:text-zinc-200",
-          element.locked && "opacity-60 cursor-not-allowed"
+          element.locked && "opacity-60 cursor-not-allowed",
+          isDragging && "shadow-xl bg-zinc-800"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
+        <div 
+          {...attributes} 
+          {...listeners}
+          className="p-1 hover:bg-zinc-700 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <GripVertical className="w-3 h-3 text-zinc-600" />
+        </div>
         {isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-accent-primary rounded-full" />}
         {isHovered && !isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-zinc-600 rounded-full" />}
         
@@ -803,7 +871,7 @@ function DraggableLibraryItem({ preset }: { preset: any }) {
       )}
     >
       <div className="mb-3 overflow-hidden rounded-lg bg-zinc-950/50 group-hover:bg-zinc-950 transition-colors h-20 flex items-center justify-center border border-zinc-800/50">
-        <Sparkles className="w-6 h-6 text-accent-primary/30 group-hover:text-accent-primary/50 transition-colors" />
+        <LayoutTemplate className="w-6 h-6 text-accent-primary/30 group-hover:text-accent-primary/50 transition-colors" />
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-wider group-hover:text-white transition-colors">
@@ -866,12 +934,21 @@ function PagesTab() {
   const { pages, activePageId, setActivePage, addPage, removePage, updatePage } = useBuilderStore();
   const [isAdding, setIsAdding] = React.useState(false);
   const [newPageName, setNewPageName] = React.useState('');
+  const [editingSeoId, setEditingSeoId] = React.useState<string | null>(null);
 
   const handleAddPage = () => {
     if (!newPageName.trim()) return;
     addPage(newPageName);
     setNewPageName('');
     setIsAdding(false);
+  };
+
+  const handleSeoUpdate = (pageId: string, updates: any) => {
+    const page = pages.find(p => p.id === pageId);
+    if (!page) return;
+    updatePage(pageId, {
+      seo: { ...(page.seo || {}), ...updates }
+    });
   };
 
   return (
@@ -916,31 +993,87 @@ function PagesTab() {
         )}
 
         {pages.sort((a, b) => a.order - b.order).map(page => (
-          <div
-            key={page.id}
-            onClick={() => setActivePage(page.id)}
-            className={cn(
-              "group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all",
-              activePageId === page.id ? "bg-accent-primary/10 text-accent-primary border border-accent-primary/20" : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 border border-transparent"
-            )}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Globe className={cn("w-3.5 h-3.5 shrink-0", activePageId === page.id ? "text-accent-primary" : "text-zinc-500")} />
-              <span className="text-xs font-medium truncate">{page.name}</span>
+          <div key={page.id} className="space-y-1">
+            <div
+              onClick={() => setActivePage(page.id)}
+              className={cn(
+                "group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all",
+                activePageId === page.id ? "bg-accent-primary/10 text-accent-primary border border-accent-primary/20" : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 border border-transparent"
+              )}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Globe className={cn("w-3.5 h-3.5 shrink-0", activePageId === page.id ? "text-accent-primary" : "text-zinc-500")} />
+                <span className="text-xs font-medium truncate">{page.name}</span>
+              </div>
+              
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingSeoId(editingSeoId === page.id ? null : page.id);
+                  }}
+                  className={cn(
+                    "p-1 rounded hover:bg-zinc-700 transition-colors",
+                    editingSeoId === page.id ? "text-accent-primary" : "text-zinc-500"
+                  )}
+                  title="SEO Settings"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                </button>
+                {pages.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Are you sure you want to delete "${page.name}"?`)) {
+                        removePage(page.id);
+                      }
+                    }}
+                    className="p-1 text-zinc-600 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
-            
-            {pages.length > 1 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm(`Are you sure you want to delete "${page.name}"?`)) {
-                    removePage(page.id);
-                  }
-                }}
-                className="p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+
+            {editingSeoId === page.id && (
+              <div className="mx-2 p-3 bg-zinc-900 border border-zinc-800 rounded-lg space-y-3 animate-in slide-in-from-top-2 duration-200">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">SEO Title</label>
+                  <input
+                    type="text"
+                    value={page.seo?.title || ''}
+                    onChange={(e) => handleSeoUpdate(page.id, { title: e.target.value })}
+                    placeholder={page.name}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">SEO Description</label>
+                  <textarea
+                    value={page.seo?.description || ''}
+                    onChange={(e) => handleSeoUpdate(page.id, { description: e.target.value })}
+                    placeholder="Page description for search engines..."
+                    rows={2}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent-primary resize-none"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">No Index</label>
+                  <button
+                    onClick={() => handleSeoUpdate(page.id, { noIndex: !page.seo?.noIndex })}
+                    className={cn(
+                      "w-8 h-4 rounded-full transition-all relative",
+                      page.seo?.noIndex ? "bg-accent-primary" : "bg-zinc-700"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all",
+                      page.seo?.noIndex ? "left-4.5" : "left-0.5"
+                    )} />
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         ))}

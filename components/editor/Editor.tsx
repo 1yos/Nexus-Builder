@@ -19,6 +19,7 @@ import RightPanel from './RightPanel';
 import Toolbar from './Toolbar';
 import Canvas from './Canvas';
 import DeveloperMode from './DeveloperMode';
+import KeyboardShortcuts from './KeyboardShortcuts';
 import { LucideIcon } from 'lucide-react';
 
 import { useSearchParams } from 'next/navigation';
@@ -163,6 +164,7 @@ export default function Editor() {
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200 selection:bg-accent-primary/30">
+        <KeyboardShortcuts />
         <Toolbar />
         <div className="flex flex-1 overflow-hidden">
           {!isPreview && <LeftPanel />}

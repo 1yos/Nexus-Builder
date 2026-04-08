@@ -12,7 +12,11 @@ import {
   Download, 
   Share2,
   Eye,
-  Code
+  Code,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Grid
 } from 'lucide-react';
 
 import NexusLogo from '../marketing/NexusLogo';
@@ -36,7 +40,11 @@ export default function Toolbar() {
     editorMode,
     setEditorMode,
     selectedElementId,
-    elements
+    elements,
+    zoom,
+    setZoom,
+    showGrid,
+    setShowGrid
   } = useBuilderStore();
 
   const canUndo = historyIndex > 0;
@@ -90,6 +98,35 @@ export default function Toolbar() {
                 title="Redo (Ctrl+Shift+Z)"
               >
                 <Redo2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="h-6 w-px bg-zinc-800" />
+
+            <div className="flex items-center gap-1 bg-zinc-950/50 border border-zinc-800 rounded-lg p-1">
+              <button 
+                onClick={() => setZoom(Math.max(0.25, zoom - 0.1))}
+                className="p-1.5 hover:bg-zinc-800 rounded-md text-zinc-400 transition-all"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <div className="px-2 text-[10px] font-bold text-zinc-500 w-12 text-center">
+                {Math.round(zoom * 100)}%
+              </div>
+              <button 
+                onClick={() => setZoom(Math.min(2, zoom + 0.1))}
+                className="p-1.5 hover:bg-zinc-800 rounded-md text-zinc-400 transition-all"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setZoom(1)}
+                className="p-1.5 hover:bg-zinc-800 rounded-md text-zinc-400 transition-all"
+                title="Reset Zoom"
+              >
+                <Maximize className="w-4 h-4" />
               </button>
             </div>
           </>
@@ -153,6 +190,13 @@ export default function Toolbar() {
         >
           <Code className="w-4 h-4" />
           <span>{editorMode === 'code' ? 'Visual' : 'Code'}</span>
+        </button>
+        <button 
+          onClick={() => setShowGrid(!showGrid)}
+          className={`p-2 rounded-md transition-colors ${showGrid ? 'text-accent-primary bg-accent-primary/10' : 'text-zinc-300 hover:bg-zinc-800'}`}
+          title="Toggle Grid"
+        >
+          <Grid className="w-4 h-4" />
         </button>
         <button 
           onClick={() => setPreview(!isPreview)}

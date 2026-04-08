@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { COMPONENT_REGISTRY } from '@/lib/registry';
 import { cn } from '@/lib/utils';
 import { StyleInput } from './StyleInput';
+import GradientBuilder from './GradientBuilder';
 import { 
   Settings2, 
   Palette, 
@@ -1121,15 +1122,48 @@ export default function RightPanel() {
 
             <PropertySection title="Appearance" icon={Palette}>
               <div className="space-y-4">
-                <StyleInput
-                  label="Background"
-                  type="color"
-                  value={currentStyles.backgroundColor || ''}
-                  onChange={(val) => handleStyleChange('backgroundColor', val)}
-                  placeholder="transparent"
-                  isOverridden={isStyleOverridden('backgroundColor')}
-                  onClearOverride={() => handleClearOverride('backgroundColor')}
-                />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Background</label>
+                    <div className="flex bg-zinc-900 p-0.5 rounded-md border border-zinc-800">
+                      <button
+                        onClick={() => handleStyleChange('backgroundImage', '')}
+                        className={cn(
+                          "px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all",
+                          !currentStyles.backgroundImage?.includes('gradient') ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                      >
+                        Solid
+                      </button>
+                      <button
+                        onClick={() => handleStyleChange('backgroundImage', 'linear-gradient(180deg, #3b82f6 0%, #8b5cf6 100%)')}
+                        className={cn(
+                          "px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all",
+                          currentStyles.backgroundImage?.includes('gradient') ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                      >
+                        Gradient
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {!currentStyles.backgroundImage?.includes('gradient') ? (
+                    <StyleInput
+                      label=""
+                      type="color"
+                      value={currentStyles.backgroundColor || ''}
+                      onChange={(val) => handleStyleChange('backgroundColor', val)}
+                      placeholder="transparent"
+                      isOverridden={isStyleOverridden('backgroundColor')}
+                      onClearOverride={() => handleClearOverride('backgroundColor')}
+                    />
+                  ) : (
+                    <GradientBuilder 
+                      value={currentStyles.backgroundImage || ''} 
+                      onChange={(val) => handleStyleChange('backgroundImage', val)} 
+                    />
+                  )}
+                </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Background Image</label>

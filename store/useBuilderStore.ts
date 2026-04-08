@@ -176,7 +176,7 @@ interface BuilderState {
   deviceMode: DeviceMode;
   editorMode: EditorMode;
   isPreview: boolean;
-  leftPanelTab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets';
+  leftPanelTab: 'components' | 'layers' | 'code' | 'theme' | 'ai' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets';
   rightPanelTab: 'style' | 'content' | 'layout' | 'animations' | 'interactions';
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
@@ -225,7 +225,7 @@ interface BuilderState {
   moveElementTo: (id: string, parentId: string | null, index: number) => void;
   setDeviceMode: (mode: DeviceMode) => void;
   setEditorMode: (mode: EditorMode) => void;
-  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets') => void;
+  setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'theme' | 'ai' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets') => void;
   setRightPanelTab: (tab: 'style' | 'content' | 'layout' | 'animations' | 'interactions') => void;
   setLeftPanelCollapsed: (collapsed: boolean) => void;
   setRightPanelCollapsed: (collapsed: boolean) => void;
@@ -236,6 +236,8 @@ interface BuilderState {
   setPan: (pan: { x: number; y: number }) => void;
   showOutlines: boolean;
   setShowOutlines: (show: boolean) => void;
+  showGrid: boolean;
+  setShowGrid: (show: boolean) => void;
   
   // CMS Actions
   addCollection: (collection: Collection) => void;
@@ -284,6 +286,9 @@ interface BuilderState {
   undo: () => void;
   redo: () => void;
   saveToHistory: () => void;
+  clipboard: ElementInstance | null;
+  copyElement: (id: string) => void;
+  pasteElement: (parentId?: string, index?: number) => void;
 }
 
 const initialPageId = uuidv4();
@@ -316,6 +321,7 @@ export const useBuilderStore = create<BuilderState>()(
       collections: [],
       entries: [],
       presence: [],
+      clipboard: null,
       zoom: 1,
       pan: { x: 0, y: 0 },
       playingAnimationId: null,
@@ -645,7 +651,7 @@ export const useBuilderStore = create<BuilderState>()(
 
       setEditorMode: (mode) => set({ editorMode: mode }),
 
-      setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets') => set({ leftPanelTab: tab }),
+      setLeftPanelTab: (tab: 'components' | 'layers' | 'code' | 'theme' | 'ai' | 'tokens' | 'cms' | 'library' | 'pages' | 'settings' | 'assets') => set({ leftPanelTab: tab }),
       
       setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 
@@ -739,7 +745,9 @@ export const useBuilderStore = create<BuilderState>()(
       setZoom: (zoom) => set({ zoom }),
       setPan: (pan) => set({ pan }),
       showOutlines: false,
+      showGrid: false,
       setShowOutlines: (show) => set({ showOutlines: show }),
+      setShowGrid: (show) => set({ showGrid: show }),
       showEmptySlots: true,
       setShowEmptySlots: (show) => set({ showEmptySlots: show }),
 
@@ -1129,6 +1137,39 @@ export const useBuilderStore = create<BuilderState>()(
         });
       },
 
+      copyElement: (id) => {
+        const { elements } = get();
+        const findAndClone = (items: ElementInstance[], targetId: string): ElementInstance | null => {
+          for (const item of items) {
+            if (item.id === targetId) return JSON.parse(JSON.stringify(item));
+            if (item.children) {
+              const found = findAndClone(item.children, targetId);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const element = findAndClone(elements, id);
+        if (element) set({ clipboard: element });
+      },
+
+      pasteElement: (parentId, index) => {
+        const { clipboard, addElement } = get();
+        if (!clipboard) return;
+        
+        const regenerateIds = (element: ElementInstance): ElementInstance => {
+          const newId = uuidv4();
+          return {
+            ...element,
+            id: newId,
+            children: element.children?.map(regenerateIds)
+          };
+        };
+        
+        const newElement = regenerateIds(clipboard);
+        addElement(newElement, parentId, index);
+      },
+
       undo: () => {
         const { history, historyIndex, activePageId } = get();
         if (historyIndex > 0) {
@@ -1163,8 +1204,16 @@ export const useBuilderStore = create<BuilderState>()(
       name: 'nexus-builder-storage',
       partialize: (state) => ({ 
         pages: state.pages, 
+        folders: state.folders,
         activePageId: state.activePageId,
-        elements: state.elements 
+        elements: state.elements,
+        assets: state.assets,
+        tokens: state.tokens,
+        siteSettings: state.siteSettings,
+        globalComponents: state.globalComponents,
+        componentOverrides: state.componentOverrides,
+        collections: state.collections,
+        entries: state.entries
       }),
     }
   )
