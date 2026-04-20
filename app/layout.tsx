@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import InstallPWA from '@/components/editor/InstallPWA';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} font-sans`}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#3b82f6" />
+        <link rel="apple-touch-icon" href="https://picsum.photos/seed/nexus/192/192" />
+      </head>
       <body suppressHydrationWarning className="antialiased">
         <script
           dangerouslySetInnerHTML={{
@@ -50,7 +56,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <InstallPWA />
+        </Providers>
       </body>
     </html>
   );
