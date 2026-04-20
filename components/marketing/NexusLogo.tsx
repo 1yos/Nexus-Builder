@@ -8,6 +8,7 @@ export default function NexusLogo({ className = "w-10 h-10" }: { className?: str
       className={`relative flex items-center justify-center ${className}`}
       whileHover="hover"
       initial="idle"
+      title="NexusBuilder Logo"
     >
       {/* Central Node */}
       <motion.div 

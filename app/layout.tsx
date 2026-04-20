@@ -103,6 +103,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           {children}
           <InstallPWA />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'SoftwareApplication',
+                name: 'NexusBuilder',
+                description: 'Construct high-performance digital entities with NexusBuilder. The ultimate cyber-minimalist website builder.',
+                applicationCategory: 'DesignApplication',
+                operatingSystem: 'Any',
+                url: 'https://nexusbuilder.netlify.app/',
+                author: {
+                  '@type': 'Organization',
+                  name: 'NexusBuilder Core',
+                },
+              }),
+            }}
+          />
         </Providers>
       </body>
     </html>
