@@ -42,7 +42,7 @@ export default function MarketingNavbar() {
           <Link href="/" className="flex items-center gap-3 group">
             <NexusLogo className={isScrolled ? "w-8 h-8" : "w-10 h-10"} />
             <div className={`font-black tracking-[0.3em] uppercase text-text-primary transition-all duration-300 ${isScrolled ? "text-lg" : "text-xl"}`}>
-              NEXUS
+              NexusBuilder
             </div>
           </Link>
 

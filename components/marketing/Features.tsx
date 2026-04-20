@@ -100,7 +100,7 @@ export default function Features() {
           
           <h2 className="text-3xl md:text-5xl font-black text-text-primary mb-6 tracking-tighter uppercase">
             Design Without <br /> 
-            Limits.
+            Limits in NexusBuilder.
           </h2>
         </div>
 

@@ -17,10 +17,10 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="flex items-center gap-3 mb-6 group">
               <NexusLogo className="w-8 h-8" />
-              <div className="text-xl font-black text-text-primary tracking-tighter uppercase group-hover:text-accent-highlight transition-colors">Nexus</div>
+              <div className="text-xl font-black text-text-primary tracking-tighter uppercase group-hover:text-accent-highlight transition-colors">NexusBuilder</div>
             </Link>
             <p className="text-text-secondary text-xs leading-relaxed max-w-xs uppercase tracking-wider font-medium opacity-60">
-              The next-generation neural synthesis platform for digital architects and creative networks.
+              The next-generation neural synthesis platform for digital architects and creative networks powered by NexusBuilder.
             </p>
           </div>
           
@@ -67,7 +67,7 @@ export default function Footer() {
         <div className="pt-10 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-6">
             <p className="text-[8px] font-black text-text-secondary uppercase tracking-[0.2em]">
-              © 2026 NEXUS CORE // ALL RIGHTS RESERVED
+              © 2026 NEXUSBUILDER CORE // ALL RIGHTS RESERVED
             </p>
             <div className="h-3 w-px bg-border" />
             <p className="text-[8px] font-black text-accent-primary uppercase tracking-[0.2em] animate-pulse">

@@ -10,8 +10,52 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'NEXUS - Neural Interface Builder',
-  description: 'Construct digital entities with NEXUS.',
+  title: {
+    default: 'NexusBuilder - Pro Neural Interface Builder',
+    template: '%s | NexusBuilder',
+  },
+  description: 'Construct high-performance digital entities with NexusBuilder. The ultimate cyber-minimalist website builder for the future.',
+  keywords: ['nexusbuilder', 'nexus', 'website builder', 'no-code', 'neural interface', 'web design', 'saas builder'],
+  metadataBase: new URL('https://nexusbuilder.netlify.app/'),
+  alternates: {
+    canonical: '/',
+  },
+  verification: {
+    google: 'google22fda73a84d0473f',
+  },
+  openGraph: {
+    title: 'NexusBuilder - Pro Neural Interface Builder',
+    description: 'The ultimate cyber-minimalist website builder.',
+    url: 'https://nexusbuilder.netlify.app/',
+    siteName: 'NexusBuilder',
+    images: [
+      {
+        url: 'https://picsum.photos/seed/nexus/1200/630',
+        width: 1200,
+        height: 630,
+        alt: 'NexusBuilder interface preview',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'NexusBuilder - Pro Neural Interface Builder',
+    description: 'Construct high-performance digital entities with NexusBuilder.',
+    images: ['https://picsum.photos/seed/nexus/1200/630'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,7 +1,7 @@
 {
-  "name": "NEXUS",
-  "short_name": "NEXUS",
-  "description": "Construct digital entities with NEXUS.",
+  "name": "NexusBuilder",
+  "short_name": "NexusBuilder",
+  "description": "Construct high-performance digital entities with NexusBuilder.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",
